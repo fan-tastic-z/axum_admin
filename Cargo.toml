@@ -3,6 +3,9 @@ name = "axum_admin"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+members = [".", "migration"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -18,3 +21,5 @@ tower-cookies = "0.9"
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# -- Others
+uuid = { version = "1", features = ["v4", "fast-rng"] }

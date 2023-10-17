@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::Router;
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 use web::routes_static;
 
@@ -20,6 +21,7 @@ async fn main() -> Result<()> {
 
 	// region:    --- Start Server
 	let addr = SocketAddr::from(([127, 0, 0, 1], 20000));
+	info!("{:<12} - {addr}\n", "LISTENING");
 	axum::Server::bind(&addr)
 		.serve(routers_all.into_make_service())
 		.await
