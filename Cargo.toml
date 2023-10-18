@@ -18,8 +18,19 @@ serde_with = "3"
 axum = "0.6"
 tower-http = { version = "0.4", features = ["fs"] }
 tower-cookies = "0.9"
+# -- sea-orm
+sea-orm = { version = "0.12", features = [
+    "runtime-tokio-rustls",
+    "sqlx-postgres",
+] }
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # -- Others
 uuid = { version = "1", features = ["v4", "fast-rng"] }
+strum_macros = "0.25"
+
+[dev-dependencies]
+anyhow = "1"
+httpc-test = "0.1.1"
+serial_test = "2"

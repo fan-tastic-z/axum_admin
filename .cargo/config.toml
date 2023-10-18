@@ -1,0 +1,8 @@
+
+
+[env]
+# Scope down tracing, to filter out external lib tracing.
+RUST_LOG = "axum_admin=debug"
+
+
+SERVICE_DB_URL = "postgres://postgres:password@localhost/axum_admin"
