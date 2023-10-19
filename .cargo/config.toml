@@ -6,3 +6,8 @@ RUST_LOG = "axum_admin=debug"
 
 
 SERVICE_DB_URL = "postgres://postgres:password@localhost/axum_admin"
+
+SERVICE_TOKEN_KEY = "9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw"
+SERVICE_TOKEN_DURATION_SEC = "1800"                                                                          # 30 minutes
+
+SERVICE_PWD_KEY = "CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA"

@@ -7,11 +7,15 @@ use crate::{model, web};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, strum_macros::AsRefStr)]
 pub enum Error {
 	// -- Login
 	LoginFailUsernameNotFound,
+	LoginFailUserHasNoPwd { user_id: Uuid },
 	LoginFailPwdNotMatching { user_id: Uuid },
+
+	// -- CtxExtError
+	CtxExt(web::mw_res_map::CtxExtError),
 
 	// -- Modules
 	Model(model::Error),

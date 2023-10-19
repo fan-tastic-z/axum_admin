@@ -1,6 +1,7 @@
 use crate::{
 	model::user::UserBmc,
 	model::ModelManager,
+	pwd::{self, ContentToHash},
 	web::{Error, Result},
 };
 use axum::{extract::State, routing::post, Json, Router};
