@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
+use uuid::Uuid;
 
 use crate::model::store;
 
@@ -10,6 +11,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
 	Store(store::Error),
 	SeaORM(#[serde_as(as = "DisplayFromStr")] sea_orm::DbErr),
+	EntityNotFound { entity: &'static str, id: Uuid },
 }
 
 // region:    --- Froms

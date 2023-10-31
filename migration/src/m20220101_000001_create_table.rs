@@ -20,6 +20,18 @@ impl MigrationTrait for Migration {
 					)
 					.col(ColumnDef::new(Users::Username).string().not_null())
 					.col(ColumnDef::new(Users::Password).string().not_null())
+					.col(
+						ColumnDef::new(Users::PasswordSalt)
+							.uuid()
+							.not_null()
+							.extra("DEFAULT uuid_generate_v4()"),
+					)
+					.col(
+						ColumnDef::new(Users::TokenSalt)
+							.uuid()
+							.not_null()
+							.extra("DEFAULT uuid_generate_v4()"),
+					)
 					.to_owned(),
 			)
 			.await
@@ -38,4 +50,6 @@ enum Users {
 	Id,
 	Username,
 	Password,
+	PasswordSalt,
+	TokenSalt,
 }

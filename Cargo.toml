@@ -37,6 +37,8 @@ strum_macros = "0.25"
 time = "0.3"
 async-trait = "0.1"
 
+migration = { path = "./migration" }
+
 [dev-dependencies]
 anyhow = "1"
 httpc-test = "0.1.1"

@@ -16,7 +16,7 @@ pub async fn new_db_pool() -> Result<Db> {
 		.min_connections(5)
 		.connect_timeout(Duration::from_secs(8))
 		.idle_timeout(Duration::from_secs(8))
-		.sqlx_logging(false);
+		.sqlx_logging(true);
 	Database::connect(opt)
 		.await
 		.map_err(|ex| Error::FailToCreatePool(ex.to_string()))

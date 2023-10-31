@@ -1,17 +1,11 @@
-use crate::{
-	log::log_request,
-	web::{Error, Result},
-};
-use async_trait::async_trait;
+use crate::{log::log_request, web::rpc::RpcInfo};
 use axum::{
-	extract::FromRequestParts,
-	http::{request::Parts, Method, Request, Uri},
-	middleware::Next,
+	http::{Method, Uri},
 	response::{IntoResponse, Response},
 	Json,
 };
-use serde::Serialize;
-use serde_json::json;
+
+use serde_json::{json, to_value};
 use tracing::debug;
 use uuid::Uuid;
 
@@ -25,6 +19,8 @@ pub async fn mw_response_map(
 ) -> Response {
 	debug!("{:<12} - mw_reponse_map", "RES_MAPPER");
 	let uuid = Uuid::new_v4();
+	let rpc_info = res.extensions().get::<RpcInfo>();
+
 	// -- Get the eventual response error.
 	let web_error = res.extensions().get::<web::Error>();
 	let client_status_error = web_error.map(|se| se.client_status_and_error());
@@ -32,11 +28,21 @@ pub async fn mw_response_map(
 		client_status_error
 			.as_ref()
 			.map(|(status_code, client_error)| {
+				let client_error = to_value(client_error).ok();
+				let message = client_error.as_ref().and_then(|v| v.get("message"));
+				let detail = client_error.as_ref().and_then(|v| v.get("detail"));
+
 				let client_error_body = json!({
+					"id": rpc_info.as_ref().map(|rpc| rpc.id.clone()),
 					"error": {
-						"type": client_error.as_ref(),
+						"message": message, // Variant name
+						"data": {
+							"req_uuid": uuid.to_string(),
+							"detail": detail
+						},
 					}
 				});
+
 				debug!("CLIENT ERROR BODY:\n{client_error_body}");
 
 				// Build the new response from the client_error_body
@@ -47,33 +53,3 @@ pub async fn mw_response_map(
 
 	error_response.unwrap_or(res)
 }
-
-pub async fn mw_ctx_resolve<B>(req: Request<B>, next: Next<B>) -> Result<Response> {
-	Ok(next.run(req).await)
-}
-
-// region:    --- Ctx Extractor
-#[async_trait]
-impl<S: Send + Sync> FromRequestParts<S> for Ctx {
-	type Rejection = Error;
-
-	async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
-		debug!("{:<12} - Ctx", "EXTRACTOR");
-		parts
-			.extensions
-			.get::<CtxExtResult>()
-			.ok_or(Error::CtxExt(CtxExtError::CtxNotInRequestExt))?
-			.clone()
-			.map_err(Error::CtxExt)
-	}
-}
-// endregion: --- Ctx Extractor
-
-// region:    --- Ctx Extractor Result/Error
-type CtxExtResult = core::result::Result<Ctx, CtxExtError>;
-
-#[derive(Clone, Serialize, Debug)]
-pub enum CtxExtError {
-	CtxNotInRequestExt,
-}
-// endregion: --- Ctx Extractor Result/Error

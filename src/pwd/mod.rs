@@ -30,3 +30,24 @@ pub fn validate_pwd(enc_content: &ContentToHash, pwd_ref: &str) -> Result<()> {
 		Err(Error::NotMatching)
 	}
 }
+
+// region:    --- TestBmc
+#[cfg(test)]
+mod tests {
+	#![allow(unused)]
+	use super::*;
+	use anyhow::Result;
+	use uuid::uuid;
+
+	#[test]
+	fn test_hash_pwd() -> Result<()> {
+		let ret = hash_pwd(&ContentToHash {
+			salt: uuid!("dff86abf-4769-4269-92fa-4461f75ea5e3"),
+			content: "demo".to_owned(),
+		})?;
+		println!("{:?}", ret);
+		Ok(())
+	}
+}
+
+// endregion: --- TestBmc
