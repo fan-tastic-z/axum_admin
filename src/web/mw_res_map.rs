@@ -49,7 +49,17 @@ pub async fn mw_response_map(
 				(*status_code, Json(client_error_body)).into_response()
 			});
 	let client_error = client_status_error.unzip().1;
-	let _ = log_request(uuid, req_method, uri, ctx, web_error, client_error).await;
+	let _ = log_request(
+		uuid,
+		req_method,
+		uri,
+		rpc_info,
+		ctx,
+		web_error,
+		client_error,
+	)
+	.await;
 
+	debug!("\n");
 	error_response.unwrap_or(res)
 }
