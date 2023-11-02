@@ -15,31 +15,17 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{from_value, json, to_value, Value};
 use tracing::debug;
-use uuid::Uuid;
 
+mod params;
 mod task_rpc;
+use params::*;
 
+/// The raw JSON-RPC request object, serving as the foundation for RPC routing.
 #[derive(Deserialize)]
 struct RpcRequest {
 	id: Option<Value>,
 	method: String,
 	params: Option<Value>,
-}
-
-#[derive(Deserialize)]
-pub struct ParamsForCreate<D> {
-	data: D,
-}
-
-#[derive(Deserialize)]
-pub struct ParamsForUpdate<D> {
-	id: Uuid,
-	data: D,
-}
-
-#[derive(Deserialize)]
-pub struct ParamsIded {
-	id: Uuid,
 }
 
 pub fn routes(mm: ModelManager) -> Router {
@@ -66,7 +52,8 @@ async fn rpc_handler(
 	res
 }
 
-/// RPC basic information holding the id and method for further logging.
+/// RPC basic information containing the rpc request
+/// id and method for additional logging purposes.
 #[derive(Debug)]
 pub struct RpcInfo {
 	pub id: Option<Value>,
