@@ -6,9 +6,13 @@ use hmac::{Hmac, Mac};
 use sha2::Sha512;
 use uuid::Uuid;
 
-use crate::{utils::{
-	b64u_decode_to_string, b64u_encode, now_utc, now_utc_plus_sec_str, parse_utc,
-}, config};
+use crate::{
+	config,
+	utils::{
+		b64::{b64u_decode_to_string, b64u_encode},
+		time::{now_utc, now_utc_plus_sec_str, parse_utc},
+	},
+};
 
 pub use self::error::{Error, Result};
 
