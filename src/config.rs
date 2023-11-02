@@ -19,7 +19,7 @@ pub struct Config {
 	// -- Db
 	pub DB_URL: String,
 
-	// -- Crypt
+	// -- 
 	pub PWD_KEY: Vec<u8>,
 
 	pub TOKEN_KEY: Vec<u8>,
@@ -31,7 +31,7 @@ impl Config {
 		Ok(Config {
 			// -- Db
 			DB_URL: get_env("SERVICE_DB_URL")?,
-			// -- Crypt
+			// -- Keys
 			PWD_KEY: get_env_b64u_as_u8s("SERVICE_PWD_KEY")?,
 			TOKEN_KEY: get_env_b64u_as_u8s("SERVICE_TOKEN_KEY")?,
 			TOKEN_DURATION_SEC: get_env_parse("SERVICE_TOKEN_DURATION_SEC")?,

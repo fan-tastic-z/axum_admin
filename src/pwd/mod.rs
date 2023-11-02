@@ -13,12 +13,13 @@ pub struct ContentToHash {
 	pub salt: Uuid,      // Clear salt.
 }
 
+/// Hash the password with the default scheme.
 pub fn hash_pwd(to_hash: &ContentToHash) -> Result<String> {
 	let key = &config().PWD_KEY;
 
-	let encrypted = hmac_sha512_hash(key, to_hash)?;
+	let hashed = hmac_sha512_hash(key, to_hash)?;
 
-	Ok(format!("#01#{encrypted}"))
+	Ok(format!("#01#{hashed}"))
 }
 
 pub fn validate_pwd(enc_content: &ContentToHash, pwd_ref: &str) -> Result<()> {

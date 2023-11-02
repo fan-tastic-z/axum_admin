@@ -29,7 +29,7 @@ pub struct UserForLogin {
 	pub id: Uuid,
 	pub username: String,
 
-	pub password: Option<String>,
+	pub password: Option<String>, // hashed with #_scheme_id_#....
 	pub password_salt: Uuid,
 	pub token_salt: Uuid,
 }
