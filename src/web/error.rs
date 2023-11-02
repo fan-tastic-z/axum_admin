@@ -8,6 +8,7 @@ use crate::{model, pwd, token, web};
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Serialize, strum_macros::AsRefStr)]
+#[serde(tag = "type", content = "data")]
 pub enum Error {
 	// -- RPC
 	RpcMethodUnknown(String),
@@ -76,10 +77,14 @@ impl IntoResponse for Error {
 // region:    --- Error Biolerplate
 
 impl core::fmt::Display for Error {
-	fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(
+		&self,
+		fmt: &mut core::fmt::Formatter,
+	) -> core::result::Result<(), core::fmt::Error> {
 		write!(fmt, "{self:?}")
 	}
 }
+
 impl std::error::Error for Error {}
 
 // endregion: --- Error Biolerplate
@@ -116,6 +121,7 @@ impl Error {
 }
 
 #[derive(Debug, Serialize, strum_macros::AsRefStr)]
+#[serde(tag = "message", content = "detail")]
 #[allow(non_camel_case_types)]
 pub enum ClientError {
 	LOGIN_FAIL,
