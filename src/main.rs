@@ -1,23 +1,18 @@
 use std::net::SocketAddr;
 
 use axum::{middleware, Router};
+use lib_core::model::ModelManager;
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use web::routes_static;
 
-mod config;
-mod ctx;
 mod error;
 mod log;
-mod model;
-mod pwd;
-mod token;
 mod web;
 use crate::web::mw_auth::{mw_ctx_require, mw_ctx_resolve};
+use crate::web::mw_res_map::mw_response_map;
 use crate::web::{routes_login, rpc};
-use crate::{model::ModelManager, web::mw_res_map::mw_response_map};
-pub use config::config;
 
 pub use self::error::{Error, Result};
 

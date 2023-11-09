@@ -1,10 +1,6 @@
-use crate::{
-	ctx::Ctx,
-	model::ModelManager,
-	web::{
-		rpc::task_rpc::{create_task, delete_task, list_tasks, update_task},
-		Error, Result,
-	},
+use crate::web::{
+	rpc::task_rpc::{create_task, delete_task, list_tasks, update_task},
+	Error, Result,
 };
 use axum::{
 	extract::State,
@@ -12,6 +8,7 @@ use axum::{
 	routing::post,
 	Json, Router,
 };
+use lib_core::{ctx::Ctx, model::ModelManager};
 use serde::Deserialize;
 use serde_json::{from_value, json, to_value, Value};
 use tracing::debug;
@@ -19,6 +16,8 @@ use tracing::debug;
 mod params;
 mod task_rpc;
 use params::*;
+
+use crate::web::mw_auth::CtxW;
 
 /// The raw JSON-RPC request object, serving as the foundation for RPC routing.
 #[derive(Deserialize)]
@@ -36,9 +35,10 @@ pub fn routes(mm: ModelManager) -> Router {
 
 async fn rpc_handler(
 	State(mm): State<ModelManager>,
-	ctx: Ctx,
+	ctx: CtxW,
 	Json(rpc_req): Json<RpcRequest>,
 ) -> Response {
+	let ctx = ctx.0;
 	// -- Create the RPC Info to be set to the response.extensions.
 	let rpc_info = RpcInfo {
 		id: rpc_req.id.clone(),

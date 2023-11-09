@@ -9,14 +9,18 @@ use serde_json::{json, to_value};
 use tracing::debug;
 use uuid::Uuid;
 
-use crate::{ctx::Ctx, web};
+use crate::web;
+
+use super::mw_auth::CtxW;
 
 pub async fn mw_response_map(
-	ctx: Option<Ctx>,
+	ctx: Option<CtxW>,
 	uri: Uri,
 	req_method: Method,
 	res: Response,
 ) -> Response {
+	let ctx = ctx.map(|c| c.0);
+
 	debug!("{:<12} - mw_reponse_map", "RES_MAPPER");
 	let uuid = Uuid::new_v4();
 	let rpc_info = res.extensions().get::<RpcInfo>();

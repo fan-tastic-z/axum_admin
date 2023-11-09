@@ -1,4 +1,4 @@
-use crate::model;
+use lib_core::model;
 
 pub type Result<T> = core::result::Result<T, Error>;
 

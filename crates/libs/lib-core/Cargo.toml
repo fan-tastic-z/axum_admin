@@ -1,26 +1,15 @@
 [package]
-name = "axum_admin"
+name = "lib-core"
 version = "0.1.0"
 edition = "2021"
-
-[workspace]
-members = [
-    "migration",
-    # -- Application Libraries
-    "crates/libs/lib-base",
-    # "crates/libs/core", # e.g., model, ctx, config, pwd, token.
-    "crates/libs/lib-core",
-]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # -- App Libs
-lib-base = { path = "crates/libs/lib-base" }
-lib-core = { path = "crates/libs/lib-core"}
+lib-base = { path = "../../libs/lib-base" }
 # -- Async
 tokio = { version = "1", features = ["full"] }
-async-trait = "0.1"
 # -- Json
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -40,14 +29,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # -- Hashing (pwd scheme-01 &token)
 hmac = "0.12"
 sha2 = "0.10"
-# -- Others
-base64 = "0.21"
+# -- Other
 uuid = { version = "1", features = ["v4", "fast-rng"] }
 strum_macros = "0.25"
-time = "0.3"
-rand = "0.8"
-
-migration = { path = "./migration" }
 
 [dev-dependencies]
 anyhow = "1"
