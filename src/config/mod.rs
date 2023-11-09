@@ -2,7 +2,7 @@
 
 mod error;
 
-use crate::utils::b64::b64u_decode;
+use lib_base::b64::b64u_decode;
 
 pub use self::error::{Error, Result};
 

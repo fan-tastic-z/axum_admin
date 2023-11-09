@@ -4,11 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = [".", "migration"]
+members = [
+    "migration",
+    # -- Application Libraries
+    "crates/libs/lib-base",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# -- App Libs
+lib-base = { path = "crates/libs/lib-base" }
 # -- Async
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"

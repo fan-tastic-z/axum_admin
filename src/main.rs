@@ -13,7 +13,6 @@ mod log;
 mod model;
 mod pwd;
 mod token;
-mod utils;
 mod web;
 use crate::web::mw_auth::{mw_ctx_require, mw_ctx_resolve};
 use crate::web::{routes_login, rpc};
