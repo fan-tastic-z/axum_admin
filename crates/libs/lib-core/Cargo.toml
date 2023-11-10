@@ -29,6 +29,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # -- Hashing (pwd scheme-01 &token)
 hmac = "0.12"
 sha2 = "0.10"
+# -- Hashing (Scheme02)
+argon2 = {version="0.5", features=["std"]}
 # -- Other
 uuid = { version = "1", features = ["v4", "fast-rng"] }
 strum_macros = "0.25"

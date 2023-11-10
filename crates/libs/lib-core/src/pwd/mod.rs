@@ -72,3 +72,37 @@ impl FromStr for PwdParts {
 }
 
 // endregion: --- Scheme Infrastructure
+
+// region:    --- Tests
+#[cfg(test)]
+mod tests {
+
+	use super::*;
+	use anyhow::Result;
+	use uuid::Uuid;
+
+	#[test]
+	fn test_multi_scheme_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_salt = Uuid::parse_str("f05e8961-d6ad-4086-9e78-a6de065e5453")?;
+		let fx_to_hash = ContentToHash {
+			content: "hello world".to_string(),
+			salt: fx_salt,
+		};
+
+		// -- Exec
+		// hash with Scheme 01
+		let pwd_hashed_s01 = hash_for_scheme("01", &fx_to_hash)?;
+		// validate with pub function (which will be with Scheme 02)
+		let status = validate_pwd(&fx_to_hash, &pwd_hashed_s01)?;
+
+		// -- Check
+		assert!(
+			matches!(status, SchemeStatus::Outdated),
+			"status should be SchemeStatus::Outdated"
+		);
+
+		Ok(())
+	}
+}
+// endregion: --- Tests
