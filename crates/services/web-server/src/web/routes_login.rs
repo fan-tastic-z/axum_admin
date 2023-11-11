@@ -6,7 +6,7 @@ use lib_core::{
 		user::{UserBmc, UserForLogin},
 		ModelManager,
 	},
-	pwd::{self, ContentToHash},
+	pwd::{self, ContentToHash, SchemeStatus},
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -50,14 +50,20 @@ async fn api_login_handler(
 		return Err(Error::LoginFailUserHasNoPwd { user_id });
 	};
 
-	pwd::validate_pwd(
+	let scheme_status = pwd::validate_pwd(
 		&ContentToHash {
 			salt: user.password_salt,
 			content: pwd_clear.clone(),
 		},
 		&pwd,
 	)
-	.map_err(|_| Error::LoginFailPwdNotMatching { user_id })?;
+	.map_err(|cause| Error::LoginFail { user_id, cause })?;
+
+	// -- Update password scheme if need
+	if let SchemeStatus::Outdated = scheme_status {
+		debug!("pwd encrypt scheme outdated, upgrading.");
+		UserBmc::update_pwd(&root_ctx, &mm, user.id, &pwd_clear).await?;
+	}
 
 	// -- Set web token.
 	web::set_token_cookie(&cookies, &user.username, user.token_salt)?;

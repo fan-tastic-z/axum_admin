@@ -6,7 +6,8 @@ mod error;
 mod scheme;
 
 pub use self::error::{Error, Result};
-use self::scheme::{get_scheme, SchemeStatus, DEFAULT_SCHEME};
+use crate::pwd::scheme::{get_scheme, DEFAULT_SCHEME};
+pub use scheme::SchemeStatus;
 
 pub struct ContentToHash {
 	pub content: String, // Clear content.
