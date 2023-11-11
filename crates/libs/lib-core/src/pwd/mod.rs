@@ -6,7 +6,7 @@ mod error;
 mod scheme;
 
 pub use self::error::{Error, Result};
-use crate::pwd::scheme::{get_scheme, DEFAULT_SCHEME};
+use crate::pwd::scheme::{get_scheme, Scheme, DEFAULT_SCHEME};
 pub use scheme::SchemeStatus;
 
 pub struct ContentToHash {

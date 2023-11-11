@@ -1,3 +1,5 @@
+use enum_dispatch::enum_dispatch;
+
 use crate::pwd::ContentToHash;
 
 mod error;
@@ -9,14 +11,21 @@ pub use self::error::{Error, Result};
 
 pub const DEFAULT_SCHEME: &str = "02";
 
-pub fn get_scheme(scheme_name: &str) -> Result<Box<dyn Scheme>> {
+pub fn get_scheme(scheme_name: &str) -> Result<impl Scheme> {
 	match scheme_name {
-		"01" => Ok(Box::new(scheme_01::Scheme01)),
-		"02" => Ok(Box::new(scheme_02::Scheme02)),
+		"01" => Ok(SchemeDispatcher::Scheme01(scheme_01::Scheme01)),
+		"02" => Ok(SchemeDispatcher::Scheme02(scheme_02::Scheme02)),
 		_ => Err(Error::SchemeNotFound(scheme_name.to_string())),
 	}
 }
 
+#[enum_dispatch(Scheme)]
+enum SchemeDispatcher {
+	Scheme01(scheme_01::Scheme01),
+	Scheme02(scheme_02::Scheme02),
+}
+
+#[enum_dispatch]
 pub trait Scheme {
 	fn hash(&self, to_hash: &ContentToHash) -> Result<String>;
 
