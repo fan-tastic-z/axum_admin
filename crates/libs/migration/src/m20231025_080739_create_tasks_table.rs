@@ -19,6 +19,12 @@ impl MigrationTrait for Migration {
 							.primary_key(),
 					)
 					.col(ColumnDef::new(Tasks::Title).string().not_null())
+					.col(
+						ColumnDef::new(Tasks::Done)
+							.boolean()
+							.not_null()
+							.default(false),
+					)
 					.to_owned(),
 			)
 			.await
@@ -36,4 +42,5 @@ enum Tasks {
 	Table,
 	Id,
 	Title,
+	Done,
 }
