@@ -1,7 +1,12 @@
 use crate::{ctx::Ctx, model::ModelManager};
+
+use modql::filter::{FilterNodes, OpValsBool, OpValsString};
+
 use sea_orm::{
-	ActiveModelTrait, ColumnTrait, EntityName, EntityTrait, QueryFilter, Set,
+	ActiveModelTrait, Condition, EntityName, EntityTrait, FromQueryResult,
+	QueryFilter, Set,
 };
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -21,17 +26,16 @@ pub struct TaskForCreate {
 	pub title: String,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, FromQueryResult)]
 pub struct TaskForUpdate {
-	pub title: String,
-	pub done: bool,
+	pub title: Option<String>,
+	pub done: Option<bool>,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(FilterNodes, Deserialize, Default, Debug)]
 pub struct TaskFilter {
-	title_eq: Option<String>,
-	title_like: Option<String>,
-	done_eq: Option<bool>,
+	title: Option<OpValsString>,
+	done: Option<OpValsBool>,
 }
 
 impl From<Model> for Task {
@@ -84,15 +88,8 @@ impl TaskBmc {
 		let db = mm.db();
 		let mut query = Tasks::find();
 		if let Some(filter) = filter {
-			if let Some(title_eq) = filter.title_eq {
-				query = query.filter(tasks::Column::Title.eq(title_eq));
-			}
-			if let Some(title_like) = filter.title_like {
-				query = query.filter(tasks::Column::Title.contains(title_like))
-			}
-			if let Some(done_eq) = filter.done_eq {
-				query = query.filter(tasks::Column::Done.eq(done_eq));
-			}
+			let cond: Condition = filter.try_into()?;
+			query = query.filter(cond);
 		}
 		let ret = query
 			.clone()
@@ -120,9 +117,12 @@ impl TaskBmc {
 				id,
 			})?
 			.into();
-
-		tasks_active_model.title = Set(task_u.title);
-		tasks_active_model.done = Set(task_u.done);
+		if let Some(title) = task_u.title {
+			tasks_active_model.title = Set(title);
+		}
+		if let Some(done) = task_u.done {
+			tasks_active_model.done = Set(done);
+		}
 		tasks_active_model.update(db).await?;
 		Ok(())
 	}
@@ -148,6 +148,7 @@ mod tests {
 	use super::*;
 	use crate::model::Error;
 	use anyhow::Result;
+	use modql::filter::OpValString;
 
 	#[tokio::test]
 	async fn test_create_ok() -> Result<()> {
@@ -242,7 +243,9 @@ mod tests {
 			.await?;
 		}
 		let filter = TaskFilter {
-			title_like: Some("by_title_contains_ok 02".to_string()),
+			title: Some(
+				OpValString::Contains("by_title_contains_ok 02".to_string()).into(),
+			),
 			..Default::default()
 		};
 		let tasks = TaskBmc::list(&ctx, &mm, Some(filter)).await?;
@@ -282,7 +285,7 @@ mod tests {
 			&mm,
 			id,
 			TaskForUpdate {
-				title: fx_title_new.to_string(),
+				title: Some(fx_title_new.to_string()),
 				..Default::default()
 			},
 		)

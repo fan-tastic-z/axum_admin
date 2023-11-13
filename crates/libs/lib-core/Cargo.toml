@@ -23,6 +23,8 @@ sea-orm = { version = "0.12", features = [
     "runtime-tokio-rustls",
     "sqlx-postgres",
 ] }
+sea-query = "0.30"
+modql = { version = "0.3.2", features = ["with-sea-query"] }
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -30,7 +32,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 hmac = "0.12"
 sha2 = "0.10"
 # -- Hashing (Scheme02)
-argon2 = {version="0.5", features=["std"]}
+argon2 = { version = "0.5", features = ["std"] }
 # -- Other
 uuid = { version = "1", features = ["v4", "fast-rng"] }
 strum_macros = "0.25"

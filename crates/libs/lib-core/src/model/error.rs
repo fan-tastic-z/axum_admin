@@ -13,6 +13,7 @@ pub enum Error {
 	SeaORM(#[serde_as(as = "DisplayFromStr")] sea_orm::DbErr),
 	EntityNotFound { entity: &'static str, id: Uuid },
 	Pwd(pwd::Error),
+	ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
 }
 
 // region:    --- Froms
@@ -31,6 +32,12 @@ impl From<sea_orm::DbErr> for Error {
 impl From<pwd::Error> for Error {
 	fn from(val: pwd::Error) -> Self {
 		Self::Pwd(val)
+	}
+}
+
+impl From<modql::filter::IntoSeaError> for Error {
+	fn from(val: modql::filter::IntoSeaError) -> Self {
+		Self::ModqlIntoSea(val)
 	}
 }
 // endregion: --- Froms
