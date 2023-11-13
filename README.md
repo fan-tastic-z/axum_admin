@@ -1,6 +1,6 @@
 # README
 
-该项目用于一点一点探索Rust Axum + SeaORM + Postgres 开发web的实践
+探索Rust Axum + SeaORM + Postgres 开发web的实践
 
 ## install tools
 
@@ -19,4 +19,14 @@ sh ./scripts/init_db.sh
 
 ```bash
 sea-orm-cli migrate up
+```
+
+## dev
+
+```bash
+
+cargo watch -q -c -w crates/services/web-server/src/ -w crates/libs/ -w .cargo/ -x "run -p web-server"
+
+cargo watch -q -c -w crates/services/ -x "run --example quick_dev"
+
 ```

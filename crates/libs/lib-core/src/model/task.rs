@@ -1,6 +1,6 @@
 use crate::{ctx::Ctx, model::ModelManager};
 
-use modql::filter::{FilterNodes, OpValsBool, OpValsString};
+use modql::filter::{FilterNodes, ListOptions, OpValsBool, OpValsString};
 
 use sea_orm::{
 	ActiveModelTrait, Condition, EntityName, EntityTrait, FromQueryResult,
@@ -84,6 +84,7 @@ impl TaskBmc {
 		_ctx: &Ctx,
 		mm: &ModelManager,
 		filter: Option<TaskFilter>,
+		_list_options: Option<ListOptions>,
 	) -> Result<Vec<Task>> {
 		let db = mm.db();
 		let mut query = Tasks::find();
@@ -207,7 +208,7 @@ mod tests {
 			)
 			.await?;
 		}
-		let tasks = TaskBmc::list(&ctx, &mm, None).await?;
+		let tasks = TaskBmc::list(&ctx, &mm, None, None).await?;
 
 		// Check
 		let tasks: Vec<Task> = tasks
@@ -248,7 +249,7 @@ mod tests {
 			),
 			..Default::default()
 		};
-		let tasks = TaskBmc::list(&ctx, &mm, Some(filter)).await?;
+		let tasks = TaskBmc::list(&ctx, &mm, Some(filter), None).await?;
 
 		// -- Check
 		assert_eq!(tasks.len(), 2);

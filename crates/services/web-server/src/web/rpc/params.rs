@@ -1,3 +1,4 @@
+use modql::filter::ListOptions;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -15,4 +16,10 @@ pub struct ParamsForUpdate<D> {
 #[derive(Deserialize)]
 pub struct ParamsIded {
 	pub id: Uuid,
+}
+
+#[derive(Deserialize)]
+pub struct ParamsList<F> {
+	pub filter: Option<F>,
+	pub list_options: Option<ListOptions>,
 }

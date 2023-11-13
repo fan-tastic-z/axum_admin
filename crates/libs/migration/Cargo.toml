@@ -9,6 +9,8 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
+# -- App Libs
+lib-core = { path = "../../libs/lib-core" }
 async-std = { version = "1", features = ["attributes", "tokio1"] }
 # -- Others
 uuid = { version = "1", features = ["v4", "fast-rng"] }

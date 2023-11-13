@@ -1,4 +1,4 @@
-mod entity;
+pub mod entity;
 mod error;
 mod store;
 pub mod task;

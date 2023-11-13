@@ -1,6 +1,9 @@
 use sea_orm::{
 	ActiveModelTrait, ColumnTrait, EntityName, EntityTrait, QueryFilter, Set,
 };
+
+use serde::Deserialize;
+
 use uuid::Uuid;
 
 use super::ModelManager;
@@ -37,7 +40,7 @@ impl UserBmc {
 			.filter(users::Column::Username.eq(username))
 			.one(db)
 			.await?;
-		Ok(user.into())
+		Ok(user)
 	}
 
 	pub async fn update_pwd(
@@ -72,7 +75,7 @@ impl UserBmc {
 	}
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct UserForLogin {
 	pub id: Uuid,
 	pub username: String,
