@@ -1,17 +1,22 @@
+use std::str::FromStr;
+
 use crate::{ctx::Ctx, model::ModelManager};
 
-use modql::filter::{FilterNodes, ListOptions, OpValsBool, OpValsString};
+use modql::filter::{FilterNodes, OpValsBool, OpValsString};
 
 use sea_orm::{
 	ActiveModelTrait, Condition, EntityName, EntityTrait, FromQueryResult,
-	QueryFilter, Set,
+	PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 
+// use sea_orm::sea_query;
+use crate::model::sea_query;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::entity::prelude::Tasks;
 use super::entity::tasks::{self, Model};
+use super::ListOptions;
 use crate::model::{Error, Result};
 
 #[derive(Deserialize, Serialize)]
@@ -84,14 +89,36 @@ impl TaskBmc {
 		_ctx: &Ctx,
 		mm: &ModelManager,
 		filter: Option<TaskFilter>,
-		_list_options: Option<ListOptions>,
+		list_options: Option<ListOptions>,
 	) -> Result<Vec<Task>> {
 		let db = mm.db();
-		let mut query = Tasks::find();
+		let mut query: sea_orm::prelude::Select<Tasks> = Tasks::find();
+		// condition from filter
 		if let Some(filter) = filter {
 			let cond: Condition = filter.try_into()?;
 			query = query.filter(cond);
 		}
+
+		if let Some(list_options) = list_options {
+			if let Some(order_bys) = list_options.convert_order_by() {
+				for (col, order) in order_bys.into_iter() {
+					query =
+						query.order_by(tasks::Column::from_str(col.as_str())?, order)
+				}
+			}
+			// let total = query.clone().count(db).await?;
+			let pagintor =
+				query.paginate(db, ListOptions::as_positive_u64(list_options.limit));
+			// let total_pages = pagintor.num_pages().await?;
+			let ret: Vec<Task> = pagintor
+				.fetch_page(ListOptions::as_positive_u64(list_options.offset))
+				.await?
+				.into_iter()
+				.map(|t| t.into())
+				.collect();
+			return Ok(ret);
+		}
+
 		let ret = query
 			.clone()
 			.all(db)
@@ -150,6 +177,7 @@ mod tests {
 	use crate::model::Error;
 	use anyhow::Result;
 	use modql::filter::OpValString;
+	use serde_json::json;
 
 	#[tokio::test]
 	async fn test_create_ok() -> Result<()> {
@@ -260,6 +288,55 @@ mod tests {
 			TaskBmc::delete(&ctx, &mm, task.id).await?;
 		}
 
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_list_with_list_options_ok() -> Result<()> {
+		let ctx = Ctx::root_ctx();
+		let mm = ModelManager::new().await?;
+		let fx_titles = &[
+			"test_list_with_list_options_ok 01",
+			"test_list_with_list_options_ok 02.1",
+			"test_list_with_list_options_ok 02.2",
+		];
+		for title in fx_titles {
+			let id = TaskBmc::create(
+				&ctx,
+				&mm,
+				TaskForCreate {
+					title: title.to_string(),
+				},
+			)
+			.await?;
+		}
+		// -- Exec
+		let filter: TaskFilter = serde_json::from_value(json!({
+			"title": {"$startsWith": "test_list_with_list_options_ok" }
+		}))?;
+		let list_options: ListOptions = serde_json::from_value(json! ({
+			"offset": 0,
+			"limit": 2,
+			"order_bys": "!title"
+		}))?;
+		let tasks =
+			TaskBmc::list(&ctx, &mm, Some(filter), Some(list_options)).await?;
+		// -- Check
+		let titles: Vec<String> =
+			tasks.iter().map(|t| t.title.to_string()).collect();
+		assert_eq!(titles.len(), 2);
+		assert_eq!(
+			&titles,
+			&[
+				"test_list_with_list_options_ok 02.2",
+				"test_list_with_list_options_ok 02.1"
+			]
+		);
+		// -- Cleanup
+		// Will delete associate tasks
+		for task in tasks {
+			TaskBmc::delete(&ctx, &mm, task.id).await?;
+		}
 		Ok(())
 	}
 

@@ -11,9 +11,15 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
 	Store(store::Error),
 	SeaORM(#[serde_as(as = "DisplayFromStr")] sea_orm::DbErr),
-	EntityNotFound { entity: &'static str, id: Uuid },
+	EntityNotFound {
+		entity: &'static str,
+		id: Uuid,
+	},
 	Pwd(pwd::Error),
 	ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
+	ColumnFromStrErr(
+		#[serde_as(as = "DisplayFromStr")] sea_orm::prelude::ColumnFromStrErr,
+	),
 }
 
 // region:    --- Froms
@@ -38,6 +44,12 @@ impl From<pwd::Error> for Error {
 impl From<modql::filter::IntoSeaError> for Error {
 	fn from(val: modql::filter::IntoSeaError) -> Self {
 		Self::ModqlIntoSea(val)
+	}
+}
+
+impl From<sea_orm::prelude::ColumnFromStrErr> for Error {
+	fn from(val: sea_orm::prelude::ColumnFromStrErr) -> Self {
+		Self::ColumnFromStrErr(val)
 	}
 }
 // endregion: --- Froms
