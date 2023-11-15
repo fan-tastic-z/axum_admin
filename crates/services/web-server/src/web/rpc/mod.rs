@@ -1,4 +1,7 @@
 use crate::web::{
+	rpc::project_rpc::{
+		create_project, delete_project, list_projects, update_project,
+	},
 	rpc::task_rpc::{create_task, delete_task, list_tasks, update_task},
 	Error, Result,
 };
@@ -14,6 +17,7 @@ use serde_json::{from_value, json, to_value, Value};
 use tracing::debug;
 
 mod params;
+mod project_rpc;
 mod task_rpc;
 use params::*;
 
@@ -62,7 +66,7 @@ pub struct RpcInfo {
 
 macro_rules! exec_rpc_fn {
 	// With optional Params
-	($rpc_fn:expr, $ctx:expr, $mm:expr, $rpc_params:expr, "optional_params") => {{
+	($rpc_fn:expr, $ctx:expr, $mm:expr, ($rpc_params:expr, "optional")) => {{
 		let rpc_fn_name = stringify!($rpc_fn);
 
 		let params = $rpc_params.map(from_value).transpose().map_err(|ex| {
@@ -108,13 +112,21 @@ async fn _rpc_handler(
 	debug!("{:<12} - _rpc_handler - method: {rpc_method}", "HANDLER");
 
 	let result_json: Value = match rpc_method.as_str() {
-		// -- Task RPC methods.
+		// -- Task RPC
 		"create_task" => exec_rpc_fn!(create_task, ctx, mm, rpc_params),
 		"list_tasks" => {
-			exec_rpc_fn!(list_tasks, ctx, mm, rpc_params, "optional_params")
+			exec_rpc_fn!(list_tasks, ctx, mm, (rpc_params, "optional"))
 		}
 		"update_task" => exec_rpc_fn!(update_task, ctx, mm, rpc_params),
 		"delete_task" => exec_rpc_fn!(delete_task, ctx, mm, rpc_params),
+
+		// -- Project RPC
+		"create_project" => exec_rpc_fn!(create_project, ctx, mm, rpc_params),
+		"list_projects" => {
+			exec_rpc_fn!(list_projects, ctx, mm, (rpc_params, "optional"))
+		}
+		"update_project" => exec_rpc_fn!(update_project, ctx, mm, rpc_params),
+		"delete_project" => exec_rpc_fn!(delete_project, ctx, mm, rpc_params),
 
 		// -- Fallback as Err.
 		_ => return Err(Error::RpcMethodUnknown(rpc_method)),

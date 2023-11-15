@@ -42,5 +42,5 @@ rand = "0.8"
 
 [dev-dependencies]
 anyhow = "1"
-httpc-test = "0.1.1"
+httpc-test = "0.1.7"
 serial_test = "2"

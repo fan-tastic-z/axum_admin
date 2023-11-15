@@ -9,17 +9,25 @@ cargo install sea-orm-cli
 cargo install sqlx-cli --no-default-features --features rustls,postgres
 ```
 
-## Start the DB
+## Start the DB and migration
 
 ```bash
 sh ./scripts/init_db.sh
+
+cd ./crates/libs/ && sea-orm-cli migrate up
 ```
 
-## Init Migration
+## dev
 
 ```bash
-sea-orm-cli migrate up
+
+cargo watch -q -c -w crates/services/web-server/src/ -w crates/libs/ -w .cargo/ -x "run -p web-server"
+
+cargo watch -q -c -w crates/services/ -x "run --example quick_dev"
+
 ```
+
+## About Migration
 
 SeaORM 中常用的一些操作以及 migration 中的一些使用：
 
@@ -143,14 +151,4 @@ impl MigrationTrait for Migration {
   Ok(())
  }
 }
-```
-
-## dev
-
-```bash
-
-cargo watch -q -c -w crates/services/web-server/src/ -w crates/libs/ -w .cargo/ -x "run -p web-server"
-
-cargo watch -q -c -w crates/services/ -x "run --example quick_dev"
-
 ```

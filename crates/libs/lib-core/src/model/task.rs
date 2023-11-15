@@ -112,17 +112,22 @@ impl TaskBmc {
 						query.order_by(tasks::Column::from_str(col.as_str())?, order)
 				}
 			}
-			// let total = query.clone().count(db).await?;
-			let pagintor =
-				query.paginate(db, ListOptions::as_positive_u64(list_options.limit));
-			// let total_pages = pagintor.num_pages().await?;
-			let ret: Vec<Task> = pagintor
-				.fetch_page(ListOptions::as_positive_u64(list_options.offset))
-				.await?
-				.into_iter()
-				.map(|t| t.into())
-				.collect();
-			return Ok(ret);
+			// FIXME: 关于limit 和 offset 以一种更加友好的方式实现
+			if let Some(limit) = list_options.limit {
+				// let total = query.clone().count(db).await?;
+				let pagintor =
+					query.paginate(db, ListOptions::as_positive_u64(limit));
+				// let total_pages = pagintor.num_pages().await?;
+				let ret: Vec<Task> = pagintor
+					.fetch_page(ListOptions::as_positive_u64(
+						list_options.offset.unwrap_or(0),
+					))
+					.await?
+					.into_iter()
+					.map(|t| t.into())
+					.collect();
+				return Ok(ret);
+			}
 		}
 
 		let ret = query

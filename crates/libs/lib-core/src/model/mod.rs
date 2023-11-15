@@ -31,8 +31,8 @@ impl ModelManager {
 
 #[derive(Default, Debug, Clone, Deserialize)]
 pub struct ListOptions {
-	pub limit: i64,
-	pub offset: i64,
+	pub limit: Option<i64>,
+	pub offset: Option<i64>,
 	pub order_bys: Option<OrderBys>,
 }
 
