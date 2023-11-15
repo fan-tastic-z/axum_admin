@@ -9,22 +9,17 @@ impl MigrationTrait for Migration {
 		manager
 			.create_table(
 				Table::create()
-					.table(Tasks::Table)
+					.table(Projects::Table)
 					.if_not_exists()
 					.col(
-						ColumnDef::new(Tasks::Id)
+						ColumnDef::new(Projects::Id)
 							.uuid()
 							.not_null()
 							.extra("DEFAULT uuid_generate_v4()")
 							.primary_key(),
 					)
-					.col(ColumnDef::new(Tasks::Title).string().not_null())
-					.col(
-						ColumnDef::new(Tasks::Done)
-							.boolean()
-							.not_null()
-							.default(false),
-					)
+					.col(ColumnDef::new(Projects::OwnerId).uuid().not_null())
+					.col(ColumnDef::new(Projects::Name).string().not_null())
 					.to_owned(),
 			)
 			.await
@@ -32,16 +27,15 @@ impl MigrationTrait for Migration {
 
 	async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
 		manager
-			.drop_table(Table::drop().table(Tasks::Table).to_owned())
+			.drop_table(Table::drop().table(Projects::Table).to_owned())
 			.await
 	}
 }
 
 #[derive(DeriveIden)]
-pub enum Tasks {
+pub enum Projects {
 	Table,
 	Id,
-	Title,
-	Done,
-	ProjectId,
+	OwnerId,
+	Name,
 }
