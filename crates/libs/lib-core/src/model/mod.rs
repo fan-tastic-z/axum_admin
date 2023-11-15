@@ -1,6 +1,7 @@
 pub mod entity;
 mod error;
 mod order_by;
+pub mod project;
 mod store;
 pub mod task;
 pub mod user;

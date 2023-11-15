@@ -38,6 +38,13 @@ sea-orm-cli migrate fresh
 sea-orm-cli migrate refresh
 ```
 
+通过数据库表信息生成entity
+
+```bash
+sea-orm-cli generate entity \
+-o ./crates/libs/lib-core/src/model/entity
+```
+
 在migration 中初始化表的数据和删除数据的例子：
 
 ```rust

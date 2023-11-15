@@ -22,6 +22,7 @@ tower-cookies = "0.9"
 sea-orm = { version = "0.12", features = [
     "runtime-tokio-rustls",
     "sqlx-postgres",
+    "with-uuid",
 ] }
 sea-query = { version = "0.30", optional = true }
 modql = { version = "0.3.2", features = ["with-sea-query"] }
