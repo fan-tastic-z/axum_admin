@@ -1,7 +1,13 @@
 use std::str::FromStr;
 
+use chrono::DateTime;
+use chrono::FixedOffset;
+
+use lib_base::time::date_time_with_zone;
+
 use modql::filter::FilterNodes;
 use modql::filter::OpValsString;
+
 use sea_orm::ActiveModelTrait;
 use sea_orm::Condition;
 use sea_orm::EntityName;
@@ -11,6 +17,7 @@ use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
 use serde::{Deserialize, Serialize};
+
 use uuid::Uuid;
 
 use crate::ctx::Ctx;
@@ -29,6 +36,11 @@ pub struct Project {
 	pub id: Uuid,
 	pub name: String,
 	pub owner_id: Uuid,
+
+	pub cid: Uuid,
+	pub ctime: DateTime<FixedOffset>,
+	pub mid: Uuid,
+	pub mtime: DateTime<FixedOffset>,
 }
 
 impl From<Model> for Project {
@@ -37,6 +49,10 @@ impl From<Model> for Project {
 			id: val.id,
 			name: val.name,
 			owner_id: val.owner_id,
+			cid: val.cid,
+			ctime: val.ctime.into(),
+			mid: val.mid,
+			mtime: val.mtime.into(),
 		}
 	}
 }
@@ -77,9 +93,14 @@ impl ProjectBmc {
 			owner_id: ctx.user_id(),
 		};
 		let db = mm.db();
+		let dt = DateTime::parse_from_rfc3339(&date_time_with_zone().to_rfc3339())?;
 		let project = projects::ActiveModel {
 			name: Set(project_c.name),
 			owner_id: Set(project_c.owner_id),
+			cid: Set(ctx.user_id()),
+			ctime: Set(dt),
+			mid: Set(ctx.user_id()),
+			mtime: Set(dt),
 			..Default::default()
 		};
 		let ret = Projects::insert(project).exec(db).await?;
@@ -147,7 +168,7 @@ impl ProjectBmc {
 	}
 
 	pub async fn update(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
 		project_u: ProjectForUpdate,
@@ -166,6 +187,9 @@ impl ProjectBmc {
 		if let Some(name) = project_u.name {
 			projects_active_model.name = Set(name)
 		}
+		let dt = DateTime::parse_from_rfc3339(&date_time_with_zone().to_rfc3339())?;
+		projects_active_model.mid = Set(ctx.user_id());
+		projects_active_model.mtime = Set(dt);
 		projects_active_model.update(db).await?;
 		Ok(())
 	}

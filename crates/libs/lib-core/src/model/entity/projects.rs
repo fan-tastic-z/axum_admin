@@ -9,6 +9,10 @@ pub struct Model {
 	pub id: Uuid,
 	pub owner_id: Uuid,
 	pub name: String,
+	pub cid: Uuid,
+	pub ctime: DateTimeWithTimeZone,
+	pub mid: Uuid,
+	pub mtime: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

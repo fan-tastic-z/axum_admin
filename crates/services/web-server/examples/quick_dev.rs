@@ -52,25 +52,6 @@ async fn main() -> Result<()> {
 		task_ids.push(result.json_value::<Uuid>("/result/id")?);
 	}
 
-	// let req_create_task = hc.do_post(
-	// 	"/api/rpc",
-	// 	json!({
-	// 		"id": 1,
-	// 		"method": "create_task",
-	// 		"params": {
-	// 			"data": {
-	// 				"project_id": project_id,
-	// 				"title": format!("task AAA {i}")
-	// 			}
-	// 		}
-	// 	}),
-	// );
-	// let create_task_res = req_create_task.await?;
-	// create_task_res.print().await?;
-	// let body = create_task_res.json_body()?;
-	// let create_task_id = &body["result"]["id"];
-	// println!("{:?}", create_task_id);
-
 	let req_update_task = hc.do_post(
 		"/api/rpc",
 		json!({

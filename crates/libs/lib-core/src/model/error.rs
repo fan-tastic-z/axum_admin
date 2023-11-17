@@ -20,6 +20,7 @@ pub enum Error {
 	ColumnFromStrErr(
 		#[serde_as(as = "DisplayFromStr")] sea_orm::prelude::ColumnFromStrErr,
 	),
+	ChronoParseError(#[serde_as(as = "DisplayFromStr")] chrono::ParseError),
 }
 
 // region:    --- Froms
@@ -50,6 +51,12 @@ impl From<modql::filter::IntoSeaError> for Error {
 impl From<sea_orm::prelude::ColumnFromStrErr> for Error {
 	fn from(val: sea_orm::prelude::ColumnFromStrErr) -> Self {
 		Self::ColumnFromStrErr(val)
+	}
+}
+
+impl From<chrono::ParseError> for Error {
+	fn from(val: chrono::ParseError) -> Self {
+		Self::ChronoParseError(val)
 	}
 }
 // endregion: --- Froms

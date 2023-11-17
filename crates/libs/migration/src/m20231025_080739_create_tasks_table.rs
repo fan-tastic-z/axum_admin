@@ -25,6 +25,18 @@ impl MigrationTrait for Migration {
 							.not_null()
 							.default(false),
 					)
+					.col(ColumnDef::new(Tasks::Cid).uuid().not_null())
+					.col(
+						ColumnDef::new(Tasks::Ctime)
+							.timestamp_with_time_zone()
+							.not_null(),
+					)
+					.col(ColumnDef::new(Tasks::Mid).uuid().not_null())
+					.col(
+						ColumnDef::new(Tasks::Mtime)
+							.timestamp_with_time_zone()
+							.not_null(),
+					)
 					.to_owned(),
 			)
 			.await
@@ -44,4 +56,8 @@ pub enum Tasks {
 	Title,
 	Done,
 	ProjectId,
+	Cid,
+	Ctime,
+	Mid,
+	Mtime,
 }

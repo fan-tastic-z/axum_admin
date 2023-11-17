@@ -9,6 +9,10 @@ pub struct Model {
 	pub id: Uuid,
 	pub title: String,
 	pub done: bool,
+	pub cid: Uuid,
+	pub ctime: DateTimeWithTimeZone,
+	pub mid: Uuid,
+	pub mtime: DateTimeWithTimeZone,
 	pub project_id: Uuid,
 }
 

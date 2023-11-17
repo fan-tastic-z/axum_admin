@@ -2,6 +2,8 @@ use std::str::FromStr;
 
 use crate::{ctx::Ctx, model::ModelManager};
 
+use chrono::{DateTime, FixedOffset};
+use lib_base::time::date_time_with_zone;
 use modql::filter::{FilterNodes, OpValsBool, OpValsString};
 
 use sea_orm::{
@@ -25,6 +27,11 @@ pub struct Task {
 
 	pub title: String,
 	pub done: bool,
+
+	pub cid: Uuid,
+	pub ctime: DateTime<FixedOffset>,
+	pub mid: Uuid,
+	pub mtime: DateTime<FixedOffset>,
 }
 
 #[derive(Deserialize)]
@@ -48,12 +55,17 @@ pub struct TaskFilter {
 }
 
 impl From<Model> for Task {
-	fn from(value: Model) -> Self {
+	fn from(val: Model) -> Self {
 		Self {
-			id: value.id,
-			project_id: value.project_id,
-			title: value.title,
-			done: value.done,
+			id: val.id,
+			project_id: val.project_id,
+			title: val.title,
+			done: val.done,
+
+			cid: val.cid,
+			ctime: val.ctime.into(),
+			mid: val.mid,
+			mtime: val.mtime.into(),
 		}
 	}
 }
@@ -62,14 +74,19 @@ pub struct TaskBmc;
 
 impl TaskBmc {
 	pub async fn create(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		task_c: TaskForCreate,
 	) -> Result<Uuid> {
 		let db = mm.db();
+		let dt = DateTime::parse_from_rfc3339(&date_time_with_zone().to_rfc3339())?;
 		let task = tasks::ActiveModel {
 			title: Set(task_c.title),
 			project_id: Set(task_c.project_id),
+			cid: Set(ctx.user_id()),
+			ctime: Set(dt),  
+			mid: Set(ctx.user_id()),
+			mtime: Set(dt),
 			..Default::default()
 		};
 		let ret = Tasks::insert(task).exec(db).await?;

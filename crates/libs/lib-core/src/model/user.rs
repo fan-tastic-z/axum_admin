@@ -1,3 +1,5 @@
+use chrono::DateTime;
+use lib_base::time::date_time_with_zone;
 use sea_orm::{
 	ActiveModelTrait, ColumnTrait, EntityName, EntityTrait, QueryFilter, Set,
 };
@@ -65,8 +67,11 @@ impl UserBmc {
 					entity: table_name,
 					id,
 				})?;
+		let dt = DateTime::parse_from_rfc3339(&date_time_with_zone().to_rfc3339())?;
 		users::ActiveModel {
 			password: Set(pwd),
+			mid: Set(ctx.user_id()),
+			mtime: Set(dt),
 			..entity.into()
 		}
 		.update(db)

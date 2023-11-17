@@ -1,3 +1,4 @@
+use chrono::Local;
 use lib_core::{
 	model::entity::users::{self, Entity},
 	pwd::{self, ContentToHash},
@@ -9,6 +10,7 @@ use sea_orm_migration::{
 		TransactionTrait,
 	},
 };
+use uuid::Uuid;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -21,6 +23,10 @@ impl MigrationTrait for Migration {
 		let u: users::ActiveModel = users::ActiveModel {
 			username: Set("demo1".to_string()),
 			password: Set("".to_string()),
+			cid: Set(Uuid::default()),
+			ctime: Set(Local::now().fixed_offset()),
+			mid: Set(Uuid::default()),
+			mtime: Set(Local::now().fixed_offset()),
 			..Default::default()
 		}
 		.insert(&transaction)

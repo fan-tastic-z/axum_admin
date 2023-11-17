@@ -20,6 +20,18 @@ impl MigrationTrait for Migration {
 					)
 					.col(ColumnDef::new(Projects::OwnerId).uuid().not_null())
 					.col(ColumnDef::new(Projects::Name).string().not_null())
+					.col(ColumnDef::new(Projects::Cid).uuid().not_null())
+					.col(
+						ColumnDef::new(Projects::Ctime)
+							.timestamp_with_time_zone()
+							.not_null(),
+					)
+					.col(ColumnDef::new(Projects::Mid).uuid().not_null())
+					.col(
+						ColumnDef::new(Projects::Mtime)
+							.timestamp_with_time_zone()
+							.not_null(),
+					)
 					.to_owned(),
 			)
 			.await
@@ -38,4 +50,8 @@ pub enum Projects {
 	Id,
 	OwnerId,
 	Name,
+	Cid,
+	Ctime,
+	Mid,
+	Mtime,
 }

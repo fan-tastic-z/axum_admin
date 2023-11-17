@@ -11,6 +11,10 @@ pub struct Model {
 	pub password: String,
 	pub password_salt: Uuid,
 	pub token_salt: Uuid,
+	pub cid: Uuid,
+	pub ctime: DateTimeWithTimeZone,
+	pub mid: Uuid,
+	pub mtime: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

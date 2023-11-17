@@ -25,7 +25,7 @@ sea-orm = { version = "0.12", features = [
     "runtime-tokio-rustls",
     "sqlx-postgres",
 ] }
-modql = { version = "0.3", features = ["with-sea-query"] }
+modql = { version = "0.3.2", features = ["with-sea-query"] }
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
