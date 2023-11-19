@@ -8,6 +8,7 @@ use lib_base::time::date_time_with_zone;
 use modql::filter::FilterNodes;
 use modql::filter::OpValsString;
 
+use modql::filter::OpValsValue;
 use sea_orm::ActiveModelTrait;
 use sea_orm::Condition;
 use sea_orm::EntityName;
@@ -23,6 +24,7 @@ use uuid::Uuid;
 use crate::ctx::Ctx;
 use crate::model::entity::prelude::Projects;
 use crate::model::entity::projects;
+use crate::model::modql_utils::{time_to_sea_value, uuid_to_sea_value};
 use crate::model::sea_query;
 use crate::model::ListOptions;
 use crate::model::ModelManager;
@@ -70,6 +72,13 @@ struct ProjectForCreateInner {
 #[derive(FilterNodes, Default, Deserialize)]
 pub struct ProjectFilter {
 	name: Option<OpValsString>,
+
+	#[modql(to_sea_value_fn = "time_to_sea_value")]
+	ctime: Option<OpValsValue>,
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	mid: Option<OpValsValue>,
+	#[modql(to_sea_value_fn = "time_to_sea_value")]
+	mtime: Option<OpValsValue>,
 }
 
 #[derive(Deserialize)]

@@ -4,8 +4,9 @@ use crate::{ctx::Ctx, model::ModelManager};
 
 use chrono::{DateTime, FixedOffset};
 use lib_base::time::date_time_with_zone;
-use modql::filter::{FilterNodes, OpValsBool, OpValsString};
+use modql::filter::{FilterNodes, OpValsBool, OpValsString, OpValsValue};
 
+use crate::model::modql_utils::{time_to_sea_value, uuid_to_sea_value};
 use sea_orm::{
 	ActiveModelTrait, Condition, EntityName, EntityTrait, FromQueryResult,
 	PaginatorTrait, QueryFilter, QueryOrder, Set,
@@ -52,6 +53,15 @@ pub struct TaskFilter {
 	project_id: Option<OpValsString>,
 	title: Option<OpValsString>,
 	done: Option<OpValsBool>,
+
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	cid: Option<OpValsValue>,
+	#[modql(to_sea_value_fn = "time_to_sea_value")]
+	ctime: Option<OpValsValue>,
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	mid: Option<OpValsValue>,
+	#[modql(to_sea_value_fn = "time_to_sea_value")]
+	mtime: Option<OpValsValue>,
 }
 
 impl From<Model> for Task {
@@ -84,7 +94,7 @@ impl TaskBmc {
 			title: Set(task_c.title),
 			project_id: Set(task_c.project_id),
 			cid: Set(ctx.user_id()),
-			ctime: Set(dt),  
+			ctime: Set(dt),
 			mid: Set(ctx.user_id()),
 			mtime: Set(dt),
 			..Default::default()
@@ -201,18 +211,22 @@ impl TaskBmc {
 #[cfg(test)]
 mod tests {
 	#![allow(unused)]
+	use std::time::Duration;
+
 	use super::*;
 	use crate::model::{
 		project::{ProjectBmc, ProjectForCreate},
 		Error,
 	};
 	use anyhow::Result;
+	use lib_base::time::{format_time, now_utc};
 	use modql::filter::OpValString;
 	use sea_orm::{
 		sea_query::{ConditionExpression, Expr, IntoCondition},
 		ColumnTrait,
 	};
 	use serde_json::json;
+	use tokio::time::sleep;
 
 	#[tokio::test]
 	async fn test_create_ok() -> Result<()> {
@@ -438,6 +452,63 @@ mod tests {
 		// -- Check
 		let task: Task = TaskBmc::get(&ctx, &mm, task.id).await?.into();
 		assert_eq!(task.title, fx_title_new);
+
+		// -- Cleanup
+		ProjectBmc::delete(&ctx, &mm, project_id).await?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_list_by_ctime_ok() -> Result<()> {
+		let ctx = Ctx::root_ctx();
+		let mm = ModelManager::new().await?;
+		let project_c = ProjectForCreate {
+			name: "project for tasks test_list_by_ctime_ok".to_string(),
+		};
+		let project_id = ProjectBmc::create(&ctx, &mm, project_c).await?;
+		let fx_titles_01 = &[
+			"test_list_by_ctime_ok 01.1",
+			"test_list_by_ctime_ok 01.2",
+			"test_list_by_ctime_ok 01.3",
+		];
+		for title in fx_titles_01 {
+			let id = TaskBmc::create(
+				&ctx,
+				&mm,
+				TaskForCreate {
+					title: title.to_string(),
+					project_id,
+				},
+			)
+			.await?;
+		}
+		let time_marker = format_time(now_utc());
+		sleep(Duration::from_millis(300)).await;
+		let fx_titles_02 =
+			&["test_list_by_ctime_ok 02.1", "test_list_by_ctime_ok 02.2"];
+		for title in fx_titles_02 {
+			let id = TaskBmc::create(
+				&ctx,
+				&mm,
+				TaskForCreate {
+					title: title.to_string(),
+					project_id,
+				},
+			)
+			.await?;
+		}
+
+		// -- Exec
+		let filter_json = json! ({
+			"ctime": {"$gt": time_marker}, // time in Rfc3339
+		});
+		let filter = serde_json::from_value(filter_json)?;
+		let tasks = TaskBmc::list(&ctx, &mm, Some(filter), None).await?;
+		// -- Check
+		let titles: Vec<String> = tasks.into_iter().map(|t| t.title).collect();
+		assert_eq!(titles.len(), 2);
+		assert_eq!(&titles, fx_titles_02);
 
 		// -- Cleanup
 		ProjectBmc::delete(&ctx, &mm, project_id).await?;

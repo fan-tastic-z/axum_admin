@@ -1,5 +1,6 @@
 pub mod entity;
 mod error;
+pub mod modql_utils;
 mod order_by;
 pub mod project;
 mod store;
