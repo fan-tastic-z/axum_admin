@@ -6,7 +6,7 @@ use axum::{
 };
 
 use serde_json::{json, to_value};
-use tracing::debug;
+use tracing::{debug, error};
 use uuid::Uuid;
 
 use crate::web;
@@ -17,6 +17,7 @@ pub async fn mw_response_map(
 	ctx: Option<CtxW>,
 	uri: Uri,
 	req_method: Method,
+	req_stamp: web::ReqStamp,
 	res: Response,
 ) -> Response {
 	let ctx = ctx.map(|c| c.0);
@@ -53,16 +54,20 @@ pub async fn mw_response_map(
 				(*status_code, Json(client_error_body)).into_response()
 			});
 	let client_error = client_status_error.unzip().1;
-	let _ = log_request(
-		uuid,
+	let log_request_res = log_request(
 		req_method,
 		uri,
+		req_stamp,
 		rpc_info,
 		ctx,
 		web_error,
 		client_error,
 	)
 	.await;
+	// For now, just simple error trace
+	if let Err(err) = log_request_res {
+		error!("IMPORTANT - log_request failed - {:?}", err);
+	}
 
 	debug!("\n");
 	error_response.unwrap_or(res)

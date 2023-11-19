@@ -1,11 +1,13 @@
 mod error;
 pub mod mw_auth;
+pub mod mw_req_stamp;
 pub mod mw_res_map;
 pub mod routes_login;
 pub mod routes_static;
 pub mod rpc;
 
 use lib_core::token::generate_web_token;
+use time::OffsetDateTime;
 use tower_cookies::{Cookie, Cookies};
 use uuid::Uuid;
 
@@ -33,3 +35,14 @@ fn remove_token_cookie(cookies: &Cookies) -> Result<()> {
 
 	Ok(())
 }
+
+// region:    --- ReqStamp
+
+/// Resolved by mw_req_stamp.
+#[derive(Debug, Clone)]
+pub struct ReqStamp {
+	pub uuid: Uuid,
+	pub time_in: OffsetDateTime,
+}
+
+// endregion: --- ReqStamp
