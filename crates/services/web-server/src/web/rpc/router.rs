@@ -2,9 +2,11 @@ use crate::web::{Error, Result};
 use std::{marker::PhantomData, pin::Pin};
 
 use futures::Future;
-use lib_core::{ctx::Ctx, model::ModelManager};
+use lib_core::ctx::Ctx;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
+
+use super::RpcState;
 
 // region:    --- RpcRouter
 pub struct RpcRouter {
@@ -32,12 +34,12 @@ impl RpcRouter {
 		&self,
 		method: &str,
 		ctx: Ctx,
-		mm: ModelManager,
+		rpc_state: RpcState,
 		params: Option<Value>,
 	) -> Result<Value> {
 		for route in self.rpc_handlers.iter() {
 			if route.is_route_for(method) {
-				return route.call(ctx, mm, params).await;
+				return route.call(ctx, rpc_state, params).await;
 			}
 		}
 		// If nothing match, return error.
@@ -87,21 +89,25 @@ macro_rules! rpc_router {
 ///
 /// Key points:
 /// - Rpc handler functions are asynchronous, thus returning a Future of Result<Value>.
-/// - The call format is normalized to `ctx`, `mm`, and `params`, which represent the json-rpc's optional value.
+/// - The call format is normalized to `ctx`, `rpc_state`, and `params`, which represent the json-rpc's optional value.
 /// - `into_boxed_route` is a convenient method for converting a RpcHandler into a Boxed RpcRoute,
 ///   allowing for dynamic dispatch by the Router.
 /// - A `RpcHandler` will typically be implemented for static functions, as `FnOnce`,
 ///   enabling them to be cloned with none or negligible performance impact,
 ///   thus facilitating the use of RpcRoute dynamic dispatch.
-pub trait RpcHandler<T, R>: Clone {
+pub trait RpcHandler<T, R, S>: Clone {
 	/// The type of future calling this handler returns.
 	type Future: Future<Output = Result<Value>> + Send + 'static;
 
-	/// Call the handler with the given request.
-	fn call(self, ctx: Ctx, mm: ModelManager, params: Option<Value>)
-		-> Self::Future;
+	/// Call the handler.
+	fn call(
+		self,
+		ctx: Ctx,
+		rpc_state: RpcState,
+		params: Option<Value>,
+	) -> Self::Future;
 
-	fn into_boxed_route(self, name: &'static str) -> Box<RpcRoute<Self, T, R>> {
+	fn into_boxed_route(self, name: &'static str) -> Box<RpcRoute<Self, T, R, S>> {
 		Box::new(RpcRoute::new(self, name))
 	}
 }
@@ -138,50 +144,52 @@ where
 
 type PinFutureValue = Pin<Box<dyn Future<Output = Result<Value>> + Send>>;
 
-/// RpcHanlder implementation for `my_rpc_handler(ctx, mm) -> Result<Serialize> `
-impl<F, Fut, R> RpcHandler<(), R> for F
+/// RpcHanlder implementation for `my_rpc_handler(ctx, rpc_state) -> Result<Serialize> `
+impl<F, Fut, R, S> RpcHandler<(), R, S> for F
 where
-	F: FnOnce(Ctx, ModelManager) -> Fut + Clone + Send + 'static,
+	F: FnOnce(Ctx, S) -> Fut + Clone + Send + 'static,
 	R: Serialize,
 	Fut: Future<Output = Result<R>> + Send,
+	S: From<RpcState> + Send,
 {
 	type Future = PinFutureValue;
 
 	fn call(
 		self,
 		ctx: Ctx,
-		mm: ModelManager,
+		rpc_state: RpcState,
 		_params: Option<Value>,
 	) -> Self::Future {
 		Box::pin(async move {
-			let result = self(ctx, mm).await?;
+			let result = self(ctx, rpc_state.into()).await?;
 			Ok(serde_json::to_value(result)?)
 		})
 	}
 }
 
-/// RpcHandler implementation for `my_rpc_handler(ctx, mm, IntoParams) -> Result<Serialize>`.
+/// RpcHandler implementation for `my_rpc_handler(ctx, rpc_state, IntoParams) -> Result<Serialize>`.
 /// Note: The trait bounds `Clone + Send + 'static` apply to `F`,
 ///       and `Fut` has its own trait bounds defined afterwards.
-impl<F, Fut, T, R> RpcHandler<(T,), R> for F
+impl<F, Fut, T, R, S> RpcHandler<(T,), R, S> for F
 where
 	T: IntoParams,
-	F: FnOnce(Ctx, ModelManager, T) -> Fut + Clone + Send + 'static,
+	F: FnOnce(Ctx, S, T) -> Fut + Clone + Send + 'static,
 	R: Serialize,
 	Fut: Future<Output = Result<R>> + Send,
+	S: From<RpcState> + Send,
 {
 	type Future = PinFutureValue;
 
 	fn call(
 		self,
 		ctx: Ctx,
-		mm: ModelManager,
+		rpc_state: RpcState,
 		params_value: Option<Value>,
 	) -> Self::Future {
 		Box::pin(async move {
 			let param = T::into_params(params_value)?;
 
-			let result = self(ctx, mm, param).await?;
+			let result = self(ctx, rpc_state.into(), param).await?;
 			Ok(serde_json::to_value(result)?)
 		})
 	}
@@ -197,14 +205,14 @@ where
 ///
 /// `RpcRoute` implements `RpcRouteTrait` for type erasure, facilitating dynamic dispatch.
 #[derive(Clone)]
-pub struct RpcRoute<H, T, R> {
+pub struct RpcRoute<H, T, R, S> {
 	name: &'static str,
 	handler: H,
-	_marker: PhantomData<(T, R)>,
+	_marker: PhantomData<(T, R, S)>,
 }
 
 // Constructor Impl
-impl<H, T, R> RpcRoute<H, T, R> {
+impl<H, T, R, S> RpcRoute<H, T, R, S> {
 	pub fn new(handler: H, name: &'static str) -> Self {
 		Self {
 			name,
@@ -215,21 +223,20 @@ impl<H, T, R> RpcRoute<H, T, R> {
 }
 
 // Caller Impl
-impl<H, T, R> RpcRoute<H, T, R>
+impl<H, T, R, S> RpcRoute<H, T, R, S>
 where
-	H: RpcHandler<T, R> + Send + Sync + 'static,
-	T: Send + Sync,
+	H: RpcHandler<T, R, S> + Send + Sync + 'static,
 {
 	pub fn call(
 		&self,
 		ctx: Ctx,
-		mm: ModelManager,
+		rpc_state: RpcState,
 		params: Option<Value>,
 	) -> H::Future {
 		// Note: Since handler is a FnOnce,
 		//       we can use it only once, so we clone it.
 		let handler = self.handler.clone();
-		RpcHandler::call(handler, ctx, mm, params)
+		RpcHandler::call(handler, ctx, rpc_state, params)
 	}
 }
 
@@ -241,7 +248,7 @@ pub trait RpcRouteTrait: Send + Sync {
 	fn call(
 		&self,
 		ctx: Ctx,
-		mm: ModelManager,
+		rpc_state: RpcState,
 		params: Option<Value>,
 	) -> PinFutureValue;
 }
@@ -249,11 +256,12 @@ pub trait RpcRouteTrait: Send + Sync {
 /// `RpcRouteTrait` for `RpcRoute`.
 /// Note: This enables `RpcRouter` to contain `rpc_handlers: Vec<Box<dyn RpcRouteTrait>>`
 ///       for dynamic dispatch.
-impl<H, T, R> RpcRouteTrait for RpcRoute<H, T, R>
+impl<H, T, R, S> RpcRouteTrait for RpcRoute<H, T, R, S>
 where
-	H: RpcHandler<T, R> + Clone + Send + Sync + 'static,
+	H: RpcHandler<T, R, S> + Clone + Send + Sync + 'static,
 	T: Send + Sync,
 	R: Send + Sync,
+	S: Send + Sync,
 {
 	fn is_route_for(&self, method: &str) -> bool {
 		method == self.name
@@ -262,10 +270,10 @@ where
 	fn call(
 		&self,
 		ctx: Ctx,
-		mm: ModelManager,
+		rpc_state: RpcState,
 		params: Option<Value>,
 	) -> Pin<Box<dyn Future<Output = Result<Value>> + Send>> {
-		Box::pin(self.call(ctx, mm, params))
+		Box::pin(self.call(ctx, rpc_state, params))
 	}
 }
 

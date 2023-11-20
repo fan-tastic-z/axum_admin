@@ -35,6 +35,30 @@ pub struct RpcInfo {
 	pub method: String,
 }
 
+// region:    --- RpcState
+/// The RpcState for the RPC handler functions.
+///
+/// This becomes useful as the application grows and requires states other than
+/// the ModelManager in the RpcHandlers.
+///
+/// By default, any RPC handler can have `my_rpc_handler(Ctx, RpcState, ...)`.
+///
+/// Implements `From<RpcState>` to allow extracting a sub-state
+/// (e.g., `my_rpc_handler(Ctx, ModelManager, ...)`.
+#[derive(Clone)]
+pub struct RpcState {
+	pub mm: ModelManager,
+}
+
+/// `RpcState -> ModelManager` allowing rpc handler functions
+/// To just have `my_rpc_handler(ctx: Ctx, mm: ModelManager, ..)`
+impl From<RpcState> for ModelManager {
+	fn from(val: RpcState) -> Self {
+		val.mm
+	}
+}
+// endregion: --- RpcState
+
 #[derive(Clone)]
 struct RpcStates(ModelManager, Arc<RpcRouter>);
 
@@ -44,14 +68,16 @@ pub fn routes(mm: ModelManager) -> Router {
 		.append(task_rpc::rpc_router())
 		.append(project_rpc::rpc_router());
 
+	let rpc_state: RpcState = RpcState { mm };
+
 	// Build the Axum Router for '/rpc'
 	Router::new()
 		.route("/rpc", post(rpc_axum_handler))
-		.with_state((mm, Arc::new(rpc_router)))
+		.with_state((rpc_state, Arc::new(rpc_router)))
 }
 
 async fn rpc_axum_handler(
-	State((mm, rpc_router)): State<(ModelManager, Arc<RpcRouter>)>,
+	State((rpc_state, rpc_router)): State<(RpcState, Arc<RpcRouter>)>,
 	ctx: CtxW,
 	Json(rpc_req): Json<RpcRequest>,
 ) -> Response {
@@ -66,7 +92,7 @@ async fn rpc_axum_handler(
 
 	// -- Exec Rpc Route
 	let res = rpc_router
-		.call(&rpc_info.method, ctx, mm, rpc_req.params)
+		.call(&rpc_info.method, ctx, rpc_state, rpc_req.params)
 		.await;
 
 	// -- Build Rpc Success Response
