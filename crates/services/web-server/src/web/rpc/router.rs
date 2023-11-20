@@ -1,5 +1,5 @@
 use crate::web::{Error, Result};
-use std::{marker::PhantomData, pin::Pin};
+use std::{collections::HashMap, marker::PhantomData, pin::Pin};
 
 use futures::Future;
 use lib_core::ctx::Ctx;
@@ -10,23 +10,23 @@ use super::RpcState;
 
 // region:    --- RpcRouter
 pub struct RpcRouter {
-	pub(self) rpc_handlers: Vec<Box<dyn RpcRouteTrait>>,
+	route_by_name: HashMap<&'static str, Box<dyn RpcRouteTrait>>,
 }
 
 impl RpcRouter {
 	pub fn new() -> Self {
 		Self {
-			rpc_handlers: Vec::new(),
+			route_by_name: HashMap::new(),
 		}
 	}
 
 	pub fn add(mut self, erased_route: Box<dyn RpcRouteTrait>) -> Self {
-		self.rpc_handlers.push(erased_route);
+		self.route_by_name.insert(erased_route.name(), erased_route);
 		self
 	}
 
-	pub fn append(mut self, mut other_router: RpcRouter) -> Self {
-		self.rpc_handlers.append(&mut other_router.rpc_handlers);
+	pub fn extend(mut self, other_router: RpcRouter) -> Self {
+		self.route_by_name.extend(other_router.route_by_name);
 		self
 	}
 
@@ -37,13 +37,11 @@ impl RpcRouter {
 		rpc_state: RpcState,
 		params: Option<Value>,
 	) -> Result<Value> {
-		for route in self.rpc_handlers.iter() {
-			if route.is_route_for(method) {
-				return route.call(ctx, rpc_state, params).await;
-			}
+		if let Some(route) = self.route_by_name.get(method) {
+			route.call(ctx, rpc_state, params).await
+		} else {
+			Err(Error::RpcMethodUnknown(method.to_string()))
 		}
-		// If nothing match, return error.
-		Err(Error::RpcMethodUnknown(method.to_string()))
 	}
 }
 
@@ -243,7 +241,7 @@ where
 /// `RpcRouteTrait` enables `RpcRoute` to become a trait object,
 /// allowing for dynamic dispatch.
 pub trait RpcRouteTrait: Send + Sync {
-	fn is_route_for(&self, method: &str) -> bool;
+	fn name(&self) -> &'static str;
 
 	fn call(
 		&self,
@@ -263,8 +261,8 @@ where
 	P: Send + Sync,
 	R: Send + Sync,
 {
-	fn is_route_for(&self, method: &str) -> bool {
-		method == self.name
+	fn name(&self) -> &'static str {
+		self.name
 	}
 
 	fn call(
