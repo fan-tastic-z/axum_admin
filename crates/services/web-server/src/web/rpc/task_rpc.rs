@@ -4,8 +4,15 @@ use lib_core::model::task::{
 };
 use lib_core::model::ModelManager;
 
+use crate::rpc_router;
+use crate::web::rpc::infra::RpcHandler;
+use crate::web::rpc::infra::RpcRouter;
 use crate::web::rpc::{ParamsForCreate, ParamsForUpdate, ParamsIded, ParamsList};
 use crate::web::Result;
+
+pub fn rpc_router() -> RpcRouter {
+	rpc_router!(create_task, update_task, list_tasks, delete_task)
+}
 
 pub async fn create_task(
 	ctx: Ctx,
@@ -26,7 +33,8 @@ pub async fn list_tasks(
 	params: Option<ParamsList<TaskFilter>>,
 ) -> Result<Vec<Task>> {
 	let (filter, list_options) = params.map(|p| (p.filter, p.list_options)).unzip();
-	let tasks = TaskBmc::list(&ctx, &mm, filter.flatten(), list_options.flatten()).await?;
+	let tasks =
+		TaskBmc::list(&ctx, &mm, filter.flatten(), list_options.flatten()).await?;
 
 	Ok(tasks)
 }

@@ -1,3 +1,4 @@
+#![allow(unused)] // For early development.
 use std::net::SocketAddr;
 
 use axum::{middleware, Router};

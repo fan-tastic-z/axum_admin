@@ -9,9 +9,21 @@ use lib_core::{
 	},
 };
 
+use crate::rpc_router;
+use crate::web::rpc::infra::RpcHandler;
+use crate::web::rpc::infra::RpcRouter;
 use crate::web::rpc::params::{
 	ParamsForCreate, ParamsForUpdate, ParamsIded, ParamsList,
 };
+
+pub fn rpc_router() -> RpcRouter {
+	rpc_router!(
+		create_project,
+		list_projects,
+		update_project,
+		delete_project
+	)
+}
 
 pub async fn create_project(
 	ctx: Ctx,
