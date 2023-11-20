@@ -4,7 +4,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use super::infra::IntoHandlerParams;
+use super::infra::{IntoDefaultHandlerParams, IntoHandlerParams};
 
 #[derive(Deserialize)]
 pub struct ParamsForCreate<D> {
@@ -34,16 +34,9 @@ pub struct ParamsList<F> {
 	pub list_options: Option<ListOptions>,
 }
 
-impl<F> IntoHandlerParams for ParamsList<F>
-where
-	F: DeserializeOwned + Send + Default,
+impl<D> IntoDefaultHandlerParams for ParamsList<D> where
+	D: DeserializeOwned + Send + Default
 {
-	fn into_handler_params(value: Option<Value>) -> Result<Self> {
-		match value {
-			Some(value) => Ok(serde_json::from_value(value)?),
-			None => Ok(Self::default()),
-		}
-	}
 }
 
 impl<F> IntoHandlerParams for Option<ParamsList<F>>

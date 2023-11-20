@@ -101,11 +101,31 @@ pub trait RpcHandler<T, R>: Clone {
 	}
 }
 
+/// `IntoHandlerParams` enables converting an `Option<Value>` into
+/// the required type for RPC handler parameters.
+/// The default implementation below will fail if the value is `None`.
+/// For custom behavior, users can implement their own `into_handler_params`
+/// method.
 pub trait IntoHandlerParams: DeserializeOwned + Send {
 	fn into_handler_params(value: Option<Value>) -> Result<Self> {
 		match value {
 			Some(value) => Ok(serde_json::from_value(value)?),
 			None => Err(Error::RpcIntoParamsMissing),
+		}
+	}
+}
+
+/// Marker trait with a blanket implementation that
+pub trait IntoDefaultHandlerParams: DeserializeOwned + Send + Default {}
+
+impl<P> IntoHandlerParams for P
+where
+	P: IntoDefaultHandlerParams,
+{
+	fn into_handler_params(value: Option<Value>) -> Result<Self> {
+		match value {
+			Some(value) => Ok(serde_json::from_value(value)?),
+			None => Ok(Self::default()),
 		}
 	}
 }
