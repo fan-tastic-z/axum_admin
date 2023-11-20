@@ -13,8 +13,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
 	// -- RPC
 	RpcMethodUnknown(String),
-	RpcMissingParams { rpc_method: String },
-	RpcFailJsonParams { rpc_method: String, cause: String },
 	RpcIntoParamsMissing,
 
 	// -- Login

@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-use crate::web::rpc::infra::RpcRouter;
-
 use axum::{
 	extract::State,
 	response::{IntoResponse, Response},
@@ -11,14 +7,17 @@ use axum::{
 use lib_core::model::ModelManager;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::sync::Arc;
 
-mod infra;
 mod params;
 mod project_rpc;
+mod router;
 mod task_rpc;
 use params::*;
 
 use crate::web::mw_auth::CtxW;
+
+use crate::web::rpc::router::RpcRouter;
 
 /// The raw JSON-RPC request object, serving as the foundation for RPC routing.
 #[derive(Deserialize)]
@@ -45,15 +44,14 @@ pub fn routes(mm: ModelManager) -> Router {
 		.append(task_rpc::rpc_router())
 		.append(project_rpc::rpc_router());
 
-	// Build the Axum States needed for this axum Router.
-	let rpc_states = RpcStates(mm, Arc::new(rpc_router));
+	// Build the Axum Router for '/rpc'
 	Router::new()
 		.route("/rpc", post(rpc_axum_handler))
-		.with_state(rpc_states)
+		.with_state((mm, Arc::new(rpc_router)))
 }
 
 async fn rpc_axum_handler(
-	State(RpcStates(mm, rpc_router)): State<RpcStates>,
+	State((mm, rpc_router)): State<(ModelManager, Arc<RpcRouter>)>,
 	ctx: CtxW,
 	Json(rpc_req): Json<RpcRequest>,
 ) -> Response {
