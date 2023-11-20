@@ -95,7 +95,7 @@ macro_rules! rpc_router {
 /// - A `RpcHandler` will typically be implemented for static functions, as `FnOnce`,
 ///   enabling them to be cloned with none or negligible performance impact,
 ///   thus facilitating the use of RpcRoute dynamic dispatch.
-pub trait RpcHandler<T, R, S>: Clone {
+pub trait RpcHandler<S, P, R>: Clone {
 	/// The type of future calling this handler returns.
 	type Future: Future<Output = Result<Value>> + Send + 'static;
 
@@ -107,7 +107,7 @@ pub trait RpcHandler<T, R, S>: Clone {
 		params: Option<Value>,
 	) -> Self::Future;
 
-	fn into_boxed_route(self, name: &'static str) -> Box<RpcRoute<Self, T, R, S>> {
+	fn into_boxed_route(self, name: &'static str) -> Box<RpcRoute<Self, S, P, R>> {
 		Box::new(RpcRoute::new(self, name))
 	}
 }
@@ -145,12 +145,12 @@ where
 type PinFutureValue = Pin<Box<dyn Future<Output = Result<Value>> + Send>>;
 
 /// RpcHanlder implementation for `my_rpc_handler(ctx, rpc_state) -> Result<Serialize> `
-impl<F, Fut, R, S> RpcHandler<(), R, S> for F
+impl<F, Fut, S, R> RpcHandler<S, (), R> for F
 where
 	F: FnOnce(Ctx, S) -> Fut + Clone + Send + 'static,
+	S: From<RpcState> + Send,
 	R: Serialize,
 	Fut: Future<Output = Result<R>> + Send,
-	S: From<RpcState> + Send,
 {
 	type Future = PinFutureValue;
 
@@ -170,13 +170,13 @@ where
 /// RpcHandler implementation for `my_rpc_handler(ctx, rpc_state, IntoParams) -> Result<Serialize>`.
 /// Note: The trait bounds `Clone + Send + 'static` apply to `F`,
 ///       and `Fut` has its own trait bounds defined afterwards.
-impl<F, Fut, T, R, S> RpcHandler<(T,), R, S> for F
+impl<F, Fut, S, P, R> RpcHandler<S, (P,), R> for F
 where
-	T: IntoParams,
-	F: FnOnce(Ctx, S, T) -> Fut + Clone + Send + 'static,
+	F: FnOnce(Ctx, S, P) -> Fut + Clone + Send + 'static,
+	S: From<RpcState> + Send,
+	P: IntoParams,
 	R: Serialize,
 	Fut: Future<Output = Result<R>> + Send,
-	S: From<RpcState> + Send,
 {
 	type Future = PinFutureValue;
 
@@ -187,7 +187,7 @@ where
 		params_value: Option<Value>,
 	) -> Self::Future {
 		Box::pin(async move {
-			let param = T::into_params(params_value)?;
+			let param = P::into_params(params_value)?;
 
 			let result = self(ctx, rpc_state.into(), param).await?;
 			Ok(serde_json::to_value(result)?)
@@ -205,14 +205,14 @@ where
 ///
 /// `RpcRoute` implements `RpcRouteTrait` for type erasure, facilitating dynamic dispatch.
 #[derive(Clone)]
-pub struct RpcRoute<H, T, R, S> {
+pub struct RpcRoute<H, S, P, R> {
 	name: &'static str,
 	handler: H,
-	_marker: PhantomData<(T, R, S)>,
+	_marker: PhantomData<(S, P, R)>,
 }
 
 // Constructor Impl
-impl<H, T, R, S> RpcRoute<H, T, R, S> {
+impl<H, S, P, R> RpcRoute<H, S, P, R> {
 	pub fn new(handler: H, name: &'static str) -> Self {
 		Self {
 			name,
@@ -223,9 +223,9 @@ impl<H, T, R, S> RpcRoute<H, T, R, S> {
 }
 
 // Caller Impl
-impl<H, T, R, S> RpcRoute<H, T, R, S>
+impl<H, S, P, R> RpcRoute<H, S, P, R>
 where
-	H: RpcHandler<T, R, S> + Send + Sync + 'static,
+	H: RpcHandler<S, P, R> + Send + Sync + 'static,
 {
 	pub fn call(
 		&self,
@@ -256,12 +256,12 @@ pub trait RpcRouteTrait: Send + Sync {
 /// `RpcRouteTrait` for `RpcRoute`.
 /// Note: This enables `RpcRouter` to contain `rpc_handlers: Vec<Box<dyn RpcRouteTrait>>`
 ///       for dynamic dispatch.
-impl<H, T, R, S> RpcRouteTrait for RpcRoute<H, T, R, S>
+impl<H, S, P, R> RpcRouteTrait for RpcRoute<H, S, P, R>
 where
-	H: RpcHandler<T, R, S> + Clone + Send + Sync + 'static,
-	T: Send + Sync,
-	R: Send + Sync,
+	H: RpcHandler<S, P, R> + Clone + Send + Sync + 'static,
 	S: Send + Sync,
+	P: Send + Sync,
+	R: Send + Sync,
 {
 	fn is_route_for(&self, method: &str) -> bool {
 		method == self.name
