@@ -82,8 +82,17 @@ macro_rules! rpc_router {
 // endregion: --- RpcRouter
 
 // region:    --- RpcHandler
-type PinFutureValue = Pin<Box<dyn Future<Output = Result<Value>> + Send>>;
 
+/// The `Handler` trait that will be implemented by rpc handler functions.
+///
+/// Key points:
+/// - Rpc handler functions are asynchronous, thus returning a Future of Result<Value>.
+/// - The call format is normalized to `ctx`, `mm`, and `params`, which represent the json-rpc's optional value.
+/// - `into_boxed_route` is a convenient method for converting a RpcHandler into a Boxed RpcRoute,
+///   allowing for dynamic dispatch by the Router.
+/// - A `RpcHandler` will typically be implemented for static functions, as `FnOnce`,
+///   enabling them to be cloned with none or negligible performance impact,
+///   thus facilitating the use of RpcRoute dynamic dispatch.
 pub trait RpcHandler<T, R>: Clone {
 	/// The type of future calling this handler returns.
 	type Future: Future<Output = Result<Value>> + Send + 'static;
@@ -97,10 +106,10 @@ pub trait RpcHandler<T, R>: Clone {
 	}
 }
 
-/// `IntoHandlerParams` enables converting an `Option<Value>` into
-/// the required type for RPC handler parameters.
-/// The default implementation below will fail if the value is `None`.
-/// For custom behavior, users can implement their own `into_handler_params`
+/// `IntoParams` allows for converting an `Option<Value>` into
+/// the necessary type for RPC handler parameters.
+/// The default implementation below will result in failure if the value is `None`.
+/// For customized behavior, users can implement their own `into_handler_params`
 /// method.
 pub trait IntoParams: DeserializeOwned + Send {
 	fn into_params(value: Option<Value>) -> Result<Self> {
@@ -111,7 +120,8 @@ pub trait IntoParams: DeserializeOwned + Send {
 	}
 }
 
-/// Marker trait with a blanket implementation that
+/// Marker trait with a blanket implementation that return T::default
+/// if the `params: Option<Value>` is none.
 pub trait IntoDefaultParams: DeserializeOwned + Send + Default {}
 
 impl<P> IntoParams for P
@@ -126,6 +136,9 @@ where
 	}
 }
 
+type PinFutureValue = Pin<Box<dyn Future<Output = Result<Value>> + Send>>;
+
+/// RpcHanlder implementation for `my_rpc_handler(ctx, mm) -> Result<Serialize> `
 impl<F, Fut, R> RpcHandler<(), R> for F
 where
 	F: FnOnce(Ctx, ModelManager) -> Fut + Clone + Send + 'static,
@@ -147,6 +160,9 @@ where
 	}
 }
 
+/// RpcHandler implementation for `my_rpc_handler(ctx, mm, IntoParams) -> Result<Serialize>`.
+/// Note: The trait bounds `Clone + Send + 'static` apply to `F`,
+///       and `Fut` has its own trait bounds defined afterwards.
 impl<F, Fut, T, R> RpcHandler<(T,), R> for F
 where
 	T: IntoParams,
@@ -163,9 +179,6 @@ where
 		params_value: Option<Value>,
 	) -> Self::Future {
 		Box::pin(async move {
-			// NOTE: For now, we require the params not to be None
-			//       when the handler takes the params argument.
-			// TODO: Needs to find a way to support Option<T> as handler params.
 			let param = T::into_params(params_value)?;
 
 			let result = self(ctx, mm, param).await?;
@@ -178,6 +191,11 @@ where
 
 // region:    --- RpcHandlerRoute
 
+/// `RpcRoute` is a wrapper for `RpcHandler` that contains:
+/// - `handler` - the actual `RpcHandler` function.
+/// - `name` - the corresponding JSON-RPC method name to which this handler responds.
+///
+/// `RpcRoute` implements `RpcRouteTrait` for type erasure, facilitating dynamic dispatch.
 #[derive(Clone)]
 pub struct RpcRoute<H, T, R> {
 	name: &'static str,
@@ -208,12 +226,15 @@ where
 		mm: ModelManager,
 		params: Option<Value>,
 	) -> H::Future {
+		// Note: Since handler is a FnOnce,
+		//       we can use it only once, so we clone it.
 		let handler = self.handler.clone();
 		RpcHandler::call(handler, ctx, mm, params)
 	}
 }
 
-// Note: To make as HandlerRoute trait object
+/// `RpcRouteTrait` enables `RpcRoute` to become a trait object,
+/// allowing for dynamic dispatch.
 pub trait RpcRouteTrait: Send + Sync {
 	fn is_route_for(&self, method: &str) -> bool;
 
@@ -225,6 +246,9 @@ pub trait RpcRouteTrait: Send + Sync {
 	) -> PinFutureValue;
 }
 
+/// `RpcRouteTrait` for `RpcRoute`.
+/// Note: This enables `RpcRouter` to contain `rpc_handlers: Vec<Box<dyn RpcRouteTrait>>`
+///       for dynamic dispatch.
 impl<H, T, R> RpcRouteTrait for RpcRoute<H, T, R>
 where
 	H: RpcHandler<T, R> + Clone + Send + Sync + 'static,
