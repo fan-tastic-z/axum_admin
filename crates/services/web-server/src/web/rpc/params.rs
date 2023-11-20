@@ -1,5 +1,7 @@
+use crate::web::{Error, Result};
 use lib_core::model::ListOptions;
 use serde::{de::DeserializeOwned, Deserialize};
+use serde_json::Value;
 use uuid::Uuid;
 
 use super::infra::IntoHandlerParams;
@@ -26,13 +28,23 @@ pub struct ParamsIded {
 
 impl IntoHandlerParams for ParamsIded {}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub struct ParamsList<F> {
 	pub filter: Option<F>,
 	pub list_options: Option<ListOptions>,
 }
 
-impl<F> IntoHandlerParams for ParamsList<F> where F: DeserializeOwned + Send {}
+impl<F> IntoHandlerParams for ParamsList<F>
+where
+	F: DeserializeOwned + Send + Default,
+{
+	fn into_handler_params(value: Option<Value>) -> Result<Self> {
+		match value {
+			Some(value) => Ok(serde_json::from_value(value)?),
+			None => Ok(Self::default()),
+		}
+	}
+}
 
 impl<F> IntoHandlerParams for Option<ParamsList<F>>
 where
