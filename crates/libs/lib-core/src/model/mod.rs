@@ -14,6 +14,9 @@ pub use self::error::{Error, Result};
 use self::store::{new_db_pool, Db};
 use sea_orm::sea_query;
 
+const LIST_LIMIT_DEFAULT: i64 = 1000;
+const LIST_LIMIT_MAX: i64 = 5000;
+
 #[derive(Clone)]
 pub struct ModelManager {
 	db: Db,
@@ -91,11 +94,32 @@ impl ListOptions {
 	}
 }
 
-fn default_list_options() -> ListOptions {
-	ListOptions {
-		limit: Some(1000),
-		offset: None,
-		order_bys: Some("id".into()),
+pub fn compute_list_options(
+	list_options: Option<ListOptions>,
+) -> Result<ListOptions> {
+	if let Some(mut list_options) = list_options {
+		// Validate the limit.
+		if let Some(limit) = list_options.limit {
+			if limit > LIST_LIMIT_MAX {
+				return Err(Error::ListLimitOverMax {
+					max: LIST_LIMIT_MAX,
+					actual: limit,
+				});
+			}
+		}
+		// Set the default limit if no limit
+		else {
+			list_options.limit = Some(LIST_LIMIT_DEFAULT);
+		}
+		Ok(list_options)
+	}
+	// When None, return default
+	else {
+		Ok(ListOptions {
+			limit: Some(LIST_LIMIT_DEFAULT),
+			offset: None,
+			order_bys: Some("id".into()),
+		})
 	}
 }
 

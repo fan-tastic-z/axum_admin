@@ -21,6 +21,11 @@ pub enum Error {
 		#[serde_as(as = "DisplayFromStr")] sea_orm::prelude::ColumnFromStrErr,
 	),
 	ChronoParseError(#[serde_as(as = "DisplayFromStr")] chrono::ParseError),
+
+	ListLimitOverMax {
+		max: i64,
+		actual: i64,
+	},
 }
 
 // region:    --- Froms

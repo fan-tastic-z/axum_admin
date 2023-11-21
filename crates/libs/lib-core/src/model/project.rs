@@ -33,7 +33,7 @@ use crate::model::{Error, Result};
 
 use crate::model::entity::projects::Model;
 
-use super::default_list_options;
+use super::compute_list_options;
 
 // region:    --- Project Types
 #[derive(Debug, Clone, Serialize)]
@@ -148,7 +148,7 @@ impl ProjectBmc {
 			query = query.filter(cond);
 		}
 
-		let list_options = list_options.unwrap_or_else(default_list_options);
+		let list_options = compute_list_options(list_options)?;
 		if let Some(order_bys) = list_options.convert_order_by() {
 			for (col, order) in order_bys.into_iter() {
 				query =

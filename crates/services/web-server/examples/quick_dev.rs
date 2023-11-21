@@ -104,7 +104,8 @@ async fn main() -> Result<()> {
 			"method": "list_tasks",
 			"params": {
 				"filters": [{
-					"project_id": project_id,
+					// "project_id": project_id,
+					"project_id": { "$in": [project_id] },
 					"title": {"$contains": "BB"},
 				}, {
 					"project_id": project_id,

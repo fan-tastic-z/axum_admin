@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use super::entity::prelude::Tasks;
 use super::entity::tasks::{self, Model};
-use super::{default_list_options, ListOptions};
+use super::{compute_list_options, ListOptions};
 use crate::model::{Error, Result};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -137,7 +137,7 @@ impl TaskBmc {
 			query = query.filter(cond);
 		}
 
-		let list_options = list_options.unwrap_or_else(default_list_options);
+		let list_options = compute_list_options(list_options)?;
 		if let Some(order_bys) = list_options.convert_order_by() {
 			for (col, order) in order_bys.into_iter() {
 				query = query.order_by(tasks::Column::from_str(col.as_str())?, order)
