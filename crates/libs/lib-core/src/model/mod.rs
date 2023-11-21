@@ -89,18 +89,14 @@ impl ListOptions {
 		}
 		return None;
 	}
-	// pub fn order_by<E>(self, select_query: &mut sea_orm::prelude::Select<E>)
-	// where
-	// 	E: EntityTrait,
-	// {
-	// 	if let Some(order_bys) = self.order_bys {
-	// 		println!("{:?}", order_bys);
-	// 		for (col, order) in order_bys.into_sea_col_order_iter() {
-	// 			println!(col)
-	// 			// select_query.order_by(col, order);
-	// 		}
-	// 	}
-	// }
+}
+
+fn default_list_options() -> ListOptions {
+	ListOptions {
+		limit: Some(1000),
+		offset: None,
+		order_bys: Some("id".into()),
+	}
 }
 
 // region:    --- TestBmc

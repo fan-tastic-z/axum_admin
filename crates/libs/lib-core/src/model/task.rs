@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use super::entity::prelude::Tasks;
 use super::entity::tasks::{self, Model};
-use super::ListOptions;
+use super::{default_list_options, ListOptions};
 use crate::model::{Error, Result};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -137,29 +137,26 @@ impl TaskBmc {
 			query = query.filter(cond);
 		}
 
-		if let Some(list_options) = list_options {
-			if let Some(order_bys) = list_options.convert_order_by() {
-				for (col, order) in order_bys.into_iter() {
-					query =
-						query.order_by(tasks::Column::from_str(col.as_str())?, order)
-				}
+		let list_options = list_options.unwrap_or_else(default_list_options);
+		if let Some(order_bys) = list_options.convert_order_by() {
+			for (col, order) in order_bys.into_iter() {
+				query = query.order_by(tasks::Column::from_str(col.as_str())?, order)
 			}
-			// FIXME: 关于limit 和 offset 以一种更加友好的方式实现
-			if let Some(limit) = list_options.limit {
-				// let total = query.clone().count(db).await?;
-				let pagintor =
-					query.paginate(db, ListOptions::as_positive_u64(limit));
-				// let total_pages = pagintor.num_pages().await?;
-				let ret: Vec<Task> = pagintor
-					.fetch_page(ListOptions::as_positive_u64(
-						list_options.offset.unwrap_or(0),
-					))
-					.await?
-					.into_iter()
-					.map(|t| t.into())
-					.collect();
-				return Ok(ret);
-			}
+		}
+		// FIXME: 关于limit 和 offset 以一种更加友好的方式实现
+		if let Some(limit) = list_options.limit {
+			// let total = query.clone().count(db).await?;
+			let pagintor = query.paginate(db, ListOptions::as_positive_u64(limit));
+			// let total_pages = pagintor.num_pages().await?;
+			let ret: Vec<Task> = pagintor
+				.fetch_page(ListOptions::as_positive_u64(
+					list_options.offset.unwrap_or(0),
+				))
+				.await?
+				.into_iter()
+				.map(|t| t.into())
+				.collect();
+			return Ok(ret);
 		}
 
 		let ret = query
