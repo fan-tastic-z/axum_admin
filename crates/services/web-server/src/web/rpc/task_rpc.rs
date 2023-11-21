@@ -31,7 +31,8 @@ pub async fn list_tasks(
 	mm: ModelManager,
 	params: ParamsList<TaskFilter>,
 ) -> Result<Vec<Task>> {
-	let tasks = TaskBmc::list(&ctx, &mm, params.filter, params.list_options).await?;
+	let tasks =
+		TaskBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
 
 	Ok(tasks)
 }

@@ -5,6 +5,7 @@ use chrono::FixedOffset;
 
 use lib_base::time::date_time_with_zone;
 
+use modql::filter::FilterGroups;
 use modql::filter::FilterNodes;
 use modql::filter::OpValsString;
 
@@ -71,6 +72,8 @@ struct ProjectForCreateInner {
 
 #[derive(FilterNodes, Default, Deserialize)]
 pub struct ProjectFilter {
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	id: Option<OpValsValue>,
 	name: Option<OpValsString>,
 
 	#[modql(to_sea_value_fn = "time_to_sea_value")]
@@ -132,13 +135,14 @@ impl ProjectBmc {
 	pub async fn list(
 		_ctx: &Ctx,
 		mm: &ModelManager,
-		filter: Option<ProjectFilter>,
+		filter: Option<Vec<ProjectFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<Project>> {
 		let db = mm.db();
 		let mut query = Projects::find();
 		if let Some(filter) = filter {
-			let cond: Condition = filter.try_into()?;
+			let filters: FilterGroups = filter.into();
+			let cond: Condition = filters.try_into()?;
 			query = query.filter(cond);
 		}
 

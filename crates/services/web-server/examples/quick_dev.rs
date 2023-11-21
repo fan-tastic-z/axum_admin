@@ -86,6 +86,9 @@ async fn main() -> Result<()> {
 			"id": 1,
 			"method": "list_tasks",
 			"params": {
+				"filters": {
+					"project_id": project_id
+				},
 				"list_options": {
 					"order_bys": "!title"
 				}
@@ -100,9 +103,15 @@ async fn main() -> Result<()> {
 			"id": 1,
 			"method": "list_tasks",
 			"params": {
-				"filter": {
+				"filters": [{
+					"project_id": project_id,
 					"title": {"$contains": "BB"},
-				}
+				}, {
+					"project_id": project_id,
+					"title": {
+						"$endsWith": "AAA 3"
+					}
+				}]
 			}
 		}),
 	);

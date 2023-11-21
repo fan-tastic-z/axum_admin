@@ -4,7 +4,9 @@ use crate::{ctx::Ctx, model::ModelManager};
 
 use chrono::{DateTime, FixedOffset};
 use lib_base::time::date_time_with_zone;
-use modql::filter::{FilterNodes, OpValsBool, OpValsString, OpValsValue};
+use modql::filter::{
+	FilterGroups, FilterNodes, OpValsBool, OpValsString, OpValsValue,
+};
 
 use crate::model::modql_utils::{time_to_sea_value, uuid_to_sea_value};
 use sea_orm::{
@@ -21,7 +23,7 @@ use super::entity::tasks::{self, Model};
 use super::ListOptions;
 use crate::model::{Error, Result};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Task {
 	pub id: Uuid,
 	pub project_id: Uuid,
@@ -49,8 +51,10 @@ pub struct TaskForUpdate {
 
 #[derive(FilterNodes, Deserialize, Default, Debug)]
 pub struct TaskFilter {
-	// FIXME: uuid filter error
-	project_id: Option<OpValsString>,
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	id: Option<OpValsValue>,
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	project_id: Option<OpValsValue>,
 	title: Option<OpValsString>,
 	done: Option<OpValsBool>,
 
@@ -121,14 +125,15 @@ impl TaskBmc {
 	pub async fn list(
 		_ctx: &Ctx,
 		mm: &ModelManager,
-		filter: Option<TaskFilter>,
+		filter: Option<Vec<TaskFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<Task>> {
 		let db = mm.db();
 		let mut query: sea_orm::prelude::Select<Tasks> = Tasks::find();
 		// condition from filter
 		if let Some(filter) = filter {
-			let cond: Condition = filter.try_into()?;
+			let filters: FilterGroups = filter.into();
+			let cond: Condition = filters.try_into()?;
 			query = query.filter(cond);
 		}
 
@@ -158,7 +163,7 @@ impl TaskBmc {
 		}
 
 		let ret = query
-			.clone()
+			// .clone()
 			.all(db)
 			.await?
 			.into_iter()
@@ -334,25 +339,13 @@ mod tests {
 			)
 			.await?;
 		}
-
-		let filter = TaskFilter {
-			project_id: Some(project_id.to_string().into()),
-			title: Some(
-				OpValString::Contains("by_title_contains_ok 02".to_string()).into(),
-			),
-			..Default::default()
-		};
-		let mut cond: Condition = filter.try_into()?;
-		cond = cond.into_condition().add(
-			Expr::col(tasks::Column::ProjectId)
-				.eq(project_id)
-				.into_condition(),
-		);
-		println!("{:?}", cond);
-		// let tasks = TaskBmc::list(&ctx, &mm, Some(filter), None).await?;
-
-		// // -- Check
-		// assert_eq!(tasks.len(), 2);
+		let filter = serde_json::from_value(json!({
+			"title": {"$contains": "by_title_contains_ok 02"},
+			"project_id": {"$eq": project_id},
+		}))?;
+		let tasks = TaskBmc::list(&ctx, &mm, Some(vec![filter]), None).await?;
+		// -- Check
+		assert_eq!(tasks.len(), 2);
 
 		// -- Cleanup
 		ProjectBmc::delete(&ctx, &mm, project_id).await?;
@@ -395,7 +388,8 @@ mod tests {
 			"order_bys": "!title"
 		}))?;
 		let tasks =
-			TaskBmc::list(&ctx, &mm, Some(filter), Some(list_options)).await?;
+			TaskBmc::list(&ctx, &mm, Some(vec![filter]), Some(list_options)).await?;
+
 		// -- Check
 		let titles: Vec<String> =
 			tasks.iter().map(|t| t.title.to_string()).collect();
@@ -503,7 +497,7 @@ mod tests {
 		let filter_json = json! ({
 			"ctime": {"$gt": time_marker}, // time in Rfc3339
 		});
-		let filter = serde_json::from_value(filter_json)?;
+		let filter = vec![serde_json::from_value(filter_json)?];
 		let tasks = TaskBmc::list(&ctx, &mm, Some(filter), None).await?;
 		// -- Check
 		let titles: Vec<String> = tasks.into_iter().map(|t| t.title).collect();

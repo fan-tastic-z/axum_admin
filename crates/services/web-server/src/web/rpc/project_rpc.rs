@@ -43,7 +43,7 @@ pub async fn list_projects(
 	params: ParamsList<ProjectFilter>,
 ) -> Result<Vec<Project>> {
 	let projects =
-		ProjectBmc::list(&ctx, &mm, params.filter, params.list_options).await?;
+		ProjectBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
 
 	Ok(projects)
 }

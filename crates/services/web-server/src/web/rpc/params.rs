@@ -1,6 +1,7 @@
 use lib_core::model::ListOptions;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
+use serde_with::{serde_as, OneOrMany};
 use uuid::Uuid;
 
 use crate::web::rpc::router::{IntoDefaultParams, IntoParams};
@@ -27,9 +28,14 @@ pub struct ParamsIded {
 
 impl IntoParams for ParamsIded {}
 
+#[serde_as]
 #[derive(Deserialize, Default)]
-pub struct ParamsList<F> {
-	pub filter: Option<F>,
+pub struct ParamsList<F>
+where
+	F: DeserializeOwned,
+{
+	#[serde_as(deserialize_as = "Option<OneOrMany<_>>")]
+	pub filters: Option<Vec<F>>,
 	pub list_options: Option<ListOptions>,
 }
 
