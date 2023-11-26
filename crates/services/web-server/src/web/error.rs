@@ -1,6 +1,8 @@
 use axum::{http::StatusCode, response::IntoResponse};
+use derive_more::From;
 use lib_core::{model, pwd, token};
 use serde::Serialize;
+use serde_with::{serde_as, DisplayFromStr};
 use tracing::debug;
 use uuid::Uuid;
 
@@ -8,7 +10,8 @@ use crate::web;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize, strum_macros::AsRefStr)]
+#[serde_as]
+#[derive(Debug, Serialize, strum_macros::AsRefStr, From)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
 	// -- RPC
@@ -17,50 +20,33 @@ pub enum Error {
 
 	// -- Login
 	LoginFailUsernameNotFound,
-	LoginFailUserHasNoPwd { user_id: Uuid },
-	LoginFail { user_id: Uuid, cause: pwd::Error },
+	LoginFailUserHasNoPwd {
+		user_id: Uuid,
+	},
+	LoginFail {
+		user_id: Uuid,
+		cause: pwd::Error,
+	},
 
 	// -- ReqStamp
 	ReqStampNotInResponseExt,
 
 	// -- CtxExtError
+	#[from]
 	CtxExt(web::mw_auth::CtxExtError),
 
 	// -- Modules
+	#[from]
 	Model(model::Error),
+	#[from]
 	Pwd(pwd::Error),
+	#[from]
 	Token(token::Error),
 
 	// -- External Modules
-	SerdeJson(String),
+	#[from]
+	SerdeJson(#[serde_as(as = "DisplayFromStr")] serde_json::Error),
 }
-
-// region:    --- Froms
-impl From<model::Error> for Error {
-	fn from(val: model::Error) -> Self {
-		Error::Model(val)
-	}
-}
-
-impl From<pwd::Error> for Error {
-	fn from(val: pwd::Error) -> Self {
-		Self::Pwd(val)
-	}
-}
-
-impl From<token::Error> for Error {
-	fn from(val: token::Error) -> Self {
-		Self::Token(val)
-	}
-}
-
-impl From<serde_json::Error> for Error {
-	fn from(val: serde_json::Error) -> Self {
-		Self::SerdeJson(val.to_string())
-	}
-}
-
-// endregion: --- Froms
 
 // region:    --- Axum IntoResponse
 

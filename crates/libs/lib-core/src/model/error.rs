@@ -1,3 +1,4 @@
+use derive_more::From;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 use uuid::Uuid;
@@ -7,19 +8,25 @@ use crate::{model::store, pwd};
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[serde_as]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, From)]
 pub enum Error {
+	#[from]
 	Store(store::Error),
+	#[from]
 	SeaORM(#[serde_as(as = "DisplayFromStr")] sea_orm::DbErr),
 	EntityNotFound {
 		entity: &'static str,
 		id: Uuid,
 	},
+	#[from]
 	Pwd(pwd::Error),
+	#[from]
 	ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
+	#[from]
 	ColumnFromStrErr(
 		#[serde_as(as = "DisplayFromStr")] sea_orm::prelude::ColumnFromStrErr,
 	),
+	#[from]
 	ChronoParseError(#[serde_as(as = "DisplayFromStr")] chrono::ParseError),
 
 	ListLimitOverMax {
@@ -27,44 +34,6 @@ pub enum Error {
 		actual: i64,
 	},
 }
-
-// region:    --- Froms
-impl From<store::Error> for Error {
-	fn from(val: store::Error) -> Self {
-		Self::Store(val)
-	}
-}
-
-impl From<sea_orm::DbErr> for Error {
-	fn from(val: sea_orm::DbErr) -> Self {
-		Self::SeaORM(val)
-	}
-}
-
-impl From<pwd::Error> for Error {
-	fn from(val: pwd::Error) -> Self {
-		Self::Pwd(val)
-	}
-}
-
-impl From<modql::filter::IntoSeaError> for Error {
-	fn from(val: modql::filter::IntoSeaError) -> Self {
-		Self::ModqlIntoSea(val)
-	}
-}
-
-impl From<sea_orm::prelude::ColumnFromStrErr> for Error {
-	fn from(val: sea_orm::prelude::ColumnFromStrErr) -> Self {
-		Self::ColumnFromStrErr(val)
-	}
-}
-
-impl From<chrono::ParseError> for Error {
-	fn from(val: chrono::ParseError) -> Self {
-		Self::ChronoParseError(val)
-	}
-}
-// endregion: --- Froms
 
 // region:    --- Error Boilerplate
 impl core::fmt::Display for Error {

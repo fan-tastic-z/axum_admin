@@ -39,6 +39,7 @@ strum_macros = "0.25"
 time = "0.3"
 rand = "0.8"
 futures = "0.3"
+derive_more = { version = "1.0.0-beta", features = ["from"] }
 
 
 [dev-dependencies]

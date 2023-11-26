@@ -41,6 +41,8 @@ strum_macros = "0.25"
 lazy-regex = "3"
 enum_dispatch = "0.3"
 chrono = "0.4"
+derive_more = {version = "1.0.0-beta", features = ["from"] }
+
 
 [dev-dependencies]
 anyhow = "1"
