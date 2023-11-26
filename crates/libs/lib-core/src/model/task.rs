@@ -11,7 +11,7 @@ use modql::filter::{
 use crate::model::modql_utils::{time_to_sea_value, uuid_to_sea_value};
 use sea_orm::{
 	ActiveModelTrait, Condition, EntityName, EntityTrait, FromQueryResult,
-	PaginatorTrait, QueryFilter, QueryOrder, Set,
+	QueryFilter, QueryOrder, Set,
 };
 
 use crate::model::sea_query;
@@ -20,6 +20,7 @@ use uuid::Uuid;
 
 use super::entity::prelude::Tasks;
 use super::entity::tasks::{self, Model};
+use super::modql_utils::apply_to_sea_query;
 use super::{compute_list_options, ListOptions};
 use crate::model::{Error, Result};
 
@@ -138,29 +139,24 @@ impl TaskBmc {
 		}
 
 		let list_options = compute_list_options(list_options)?;
-		if let Some(order_bys) = list_options.convert_order_by() {
-			for (col, order) in order_bys.into_iter() {
-				query = query.order_by(tasks::Column::from_str(col.as_str())?, order)
+		query = apply_to_sea_query(query, &list_options);
+		if let Some(order_bys) = list_options.order_bys {
+			for order in order_bys.into_iter() {
+				match order {
+					modql::filter::OrderBy::Asc(col) => {
+						query = query
+							.order_by_asc(tasks::Column::from_str(col.as_str())?);
+					}
+					modql::filter::OrderBy::Desc(col) => {
+						query = query
+							.order_by_desc(tasks::Column::from_str(col.as_str())?);
+					}
+				}
 			}
-		}
-		// FIXME: 关于limit 和 offset 以一种更加友好的方式实现
-		if let Some(limit) = list_options.limit {
-			// let total = query.clone().count(db).await?;
-			let pagintor = query.paginate(db, ListOptions::as_positive_u64(limit));
-			// let total_pages = pagintor.num_pages().await?;
-			let ret: Vec<Task> = pagintor
-				.fetch_page(ListOptions::as_positive_u64(
-					list_options.offset.unwrap_or(0),
-				))
-				.await?
-				.into_iter()
-				.map(|t| t.into())
-				.collect();
-			return Ok(ret);
 		}
 
 		let ret = query
-			// .clone()
+			.clone()
 			.all(db)
 			.await?
 			.into_iter()

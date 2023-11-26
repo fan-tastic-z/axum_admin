@@ -1,14 +1,11 @@
 pub mod entity;
 mod error;
 pub mod modql_utils;
-mod order_by;
 pub mod project;
 mod store;
 pub mod task;
 pub mod user;
-pub use order_by::*;
-
-use serde::Deserialize;
+use modql::filter::ListOptions;
 
 pub use self::error::{Error, Result};
 use self::store::{new_db_pool, Db};
@@ -30,67 +27,6 @@ impl ModelManager {
 
 	pub fn db(&self) -> &Db {
 		&self.db
-	}
-}
-
-#[derive(Default, Debug, Clone, Deserialize)]
-pub struct ListOptions {
-	pub limit: Option<i64>,
-	pub offset: Option<i64>,
-	pub order_bys: Option<OrderBys>,
-}
-
-impl From<OrderBys> for ListOptions {
-	fn from(val: OrderBys) -> Self {
-		Self {
-			order_bys: Some(val),
-			..Default::default()
-		}
-	}
-}
-
-impl From<OrderBys> for Option<ListOptions> {
-	fn from(val: OrderBys) -> Self {
-		Some(ListOptions {
-			order_bys: Some(val),
-			..Default::default()
-		})
-	}
-}
-
-impl From<OrderBy> for ListOptions {
-	fn from(val: OrderBy) -> Self {
-		Self {
-			order_bys: Some(OrderBys::from(val)),
-			..Default::default()
-		}
-	}
-}
-
-impl From<OrderBy> for Option<ListOptions> {
-	fn from(val: OrderBy) -> Self {
-		Some(ListOptions {
-			order_bys: Some(OrderBys::from(val)),
-			..Default::default()
-		})
-	}
-}
-
-impl ListOptions {
-	fn as_positive_u64(num: i64) -> u64 {
-		if num < 0 {
-			0
-		} else {
-			num as u64
-		}
-	}
-	pub fn convert_order_by(
-		&self,
-	) -> Option<impl Iterator<Item = (String, sea_query::Order)>> {
-		if let Some(order_bys) = &self.order_bys {
-			return Some(order_bys.clone().into_sea_orm_col_order_iter());
-		}
-		return None;
 	}
 }
 
@@ -133,13 +69,34 @@ mod tests {
 
 	#[test]
 	fn test_order_by() -> Result<()> {
-		println!("123");
 		let list_options: ListOptions = serde_json::from_value(json! ({
 			"offset": 0,
 			"limit": 2,
 			"order_bys": "!title"
 		}))?;
-		println!("{:?}", list_options);
+		if let Some(order_bys) = list_options.order_bys {
+			for order_by in order_bys.into_iter() {
+				match order_by {
+					modql::filter::OrderBy::Asc(col) => {}
+					modql::filter::OrderBy::Desc(col) => todo!(),
+				}
+			}
+			// order_bys.into_iter().map(|i| match i {
+			// 	modql::filter::OrderBy::Asc(col) => {
+
+			// 	},
+			// 	modql::filter::OrderBy::Desc(col) => todo!(),
+			// });
+			// for i in order_bys.into_iter() {
+			// 	match i {
+			// 		modql::filter::OrderBy::Asc(col) => todo!(),
+			// 		modql::filter::OrderBy::Desc(col) => todo!(),
+			// 	}
+			// }
+			// for (col, order) in order_bys.into_sea_col_order_iter() {
+			// 	println!("{:?} {:?}", col, order);
+			// }
+		}
 		// list_options.order_by();
 		Ok(())
 	}

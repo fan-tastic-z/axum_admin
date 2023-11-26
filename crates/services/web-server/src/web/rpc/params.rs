@@ -1,4 +1,4 @@
-use lib_core::model::ListOptions;
+use modql::filter::ListOptions;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use serde_with::{serde_as, OneOrMany};

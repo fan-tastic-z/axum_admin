@@ -7,6 +7,7 @@ use lib_base::time::date_time_with_zone;
 
 use modql::filter::FilterGroups;
 use modql::filter::FilterNodes;
+use modql::filter::ListOptions;
 use modql::filter::OpValsString;
 
 use modql::filter::OpValsValue;
@@ -14,7 +15,6 @@ use sea_orm::ActiveModelTrait;
 use sea_orm::Condition;
 use sea_orm::EntityName;
 use sea_orm::EntityTrait;
-use sea_orm::PaginatorTrait;
 use sea_orm::QueryFilter;
 use sea_orm::QueryOrder;
 use sea_orm::Set;
@@ -27,13 +27,14 @@ use crate::model::entity::prelude::Projects;
 use crate::model::entity::projects;
 use crate::model::modql_utils::{time_to_sea_value, uuid_to_sea_value};
 use crate::model::sea_query;
-use crate::model::ListOptions;
+// use crate::model::ListOptions;
 use crate::model::ModelManager;
 use crate::model::{Error, Result};
 
 use crate::model::entity::projects::Model;
 
 use super::compute_list_options;
+use super::modql_utils::apply_to_sea_query;
 
 // region:    --- Project Types
 #[derive(Debug, Clone, Serialize)]
@@ -149,26 +150,21 @@ impl ProjectBmc {
 		}
 
 		let list_options = compute_list_options(list_options)?;
-		if let Some(order_bys) = list_options.convert_order_by() {
-			for (col, order) in order_bys.into_iter() {
-				query =
-					query.order_by(projects::Column::from_str(col.as_str())?, order)
+		query = apply_to_sea_query(query, &list_options);
+		if let Some(order_bys) = list_options.order_bys {
+			for order in order_bys.into_iter() {
+				match order {
+					modql::filter::OrderBy::Asc(col) => {
+						query = query
+							.order_by_asc(projects::Column::from_str(col.as_str())?);
+					}
+					modql::filter::OrderBy::Desc(col) => {
+						query = query.order_by_desc(projects::Column::from_str(
+							col.as_str(),
+						)?);
+					}
+				}
 			}
-		}
-		// FIXME: 关于limit 和 offset 以一种更加友好的方式实现
-		if let Some(limit) = list_options.limit {
-			// let total = query.clone().count(db).await?;
-			let pagintor = query.paginate(db, ListOptions::as_positive_u64(limit));
-			// let total_pages = pagintor.num_pages().await?;
-			let ret: Vec<Project> = pagintor
-				.fetch_page(ListOptions::as_positive_u64(
-					list_options.offset.unwrap_or(0),
-				))
-				.await?
-				.into_iter()
-				.map(|t| t.into())
-				.collect();
-			return Ok(ret);
 		}
 		let ret = query
 			.clone()
