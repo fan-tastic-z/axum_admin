@@ -3,6 +3,7 @@ use crate::router::FromResources;
 use crate::router::PinFutureValue;
 use crate::router::Result;
 use crate::router::RpcHandlerWrapper;
+use crate::router::RpcHandlerWrapperTrait;
 use crate::RpcResources;
 use futures::Future;
 use serde::Serialize;
@@ -20,7 +21,13 @@ use serde_json::Value;
 ///   thus facilitating the use of RpcRoute dynamic dispatch.
 /// - `T` is the tuple of `impl FromResources` arguments.
 /// - `P` is the `impl IntoParams` argument.
-pub trait RpcHandler<T, P, R>: Clone {
+///
+pub trait RpcHandler<T, P, R>: Clone
+where
+	T: Send + Sync + 'static,
+	P: Send + Sync + 'static,
+	R: Send + Sync + 'static,
+{
 	/// The type of future calling this handler returns.
 	type Future: Future<Output = Result<Value>> + Send + 'static;
 
@@ -31,11 +38,13 @@ pub trait RpcHandler<T, P, R>: Clone {
 		params: Option<Value>,
 	) -> Self::Future;
 
-	/// Handler into a Boxed RpcHandlerWrapper
-	/// which can then be placed in a container of `Box<dyn RpcHandlerWrapperTrait>`
-	/// for dynamic dispatch.
-	fn into_box(self) -> Box<RpcHandlerWrapper<Self, T, P, R>> {
-		Box::new(RpcHandlerWrapper::new(self))
+	/// Convert this RpcHandler into a Boxed dyn RpcHandlerWrapperTrait,
+	/// for dynamic dispatch by the Router.
+	fn into_dyn(self) -> Box<dyn RpcHandlerWrapperTrait>
+	where
+		Self: Sized + Send + Sync + 'static,
+	{
+		Box::new(RpcHandlerWrapper::new(self)) as Box<dyn RpcHandlerWrapperTrait>
 	}
 }
 
@@ -48,9 +57,9 @@ macro_rules! impl_rpc_handler_pair {
         impl<F, Fut, $($T,)* P, R> RpcHandler<($($T,)*), (P,), R> for F
         where
             F: FnOnce($($T,)* P) -> Fut + Clone + Send + 'static,
-            $( $T: FromResources + Send, )*
-            P: IntoParams,
-            R: Serialize,
+            $( $T: FromResources + Send + Sync + 'static, )*
+            P: IntoParams + Send + Sync + 'static,
+            R: Serialize + Send + Sync + 'static,
             Fut: Future<Output = Result<R>> + Send,
         {
             type Future = PinFutureValue;
@@ -77,8 +86,8 @@ macro_rules! impl_rpc_handler_pair {
 		impl<F, Fut, $($T,)* R> RpcHandler<($($T,)*), (), R> for F
 		where
 			F: FnOnce($($T,)*) -> Fut + Clone + Send + 'static,
-			$( $T: FromResources + Send, )*
-			R: Serialize,
+			$( $T: FromResources + Send + Sync + 'static, )*
+			R: Serialize + Send + Sync + 'static,
 			Fut: Future<Output = Result<R>> + Send,
 		{
 			type Future = PinFutureValue;

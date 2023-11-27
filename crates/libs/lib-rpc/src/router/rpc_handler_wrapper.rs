@@ -28,6 +28,9 @@ impl<H, T, P, R> RpcHandlerWrapper<H, T, P, R> {
 impl<H, T, P, R> RpcHandlerWrapper<H, T, P, R>
 where
 	H: RpcHandler<T, P, R> + Send + Sync + 'static,
+	T: Send + Sync + 'static,
+	P: Send + Sync + 'static,
+	R: Send + Sync + 'static,
 {
 	pub fn call(
 		&self,
@@ -54,9 +57,9 @@ pub trait RpcHandlerWrapperTrait: Send + Sync {
 impl<H, T, P, R> RpcHandlerWrapperTrait for RpcHandlerWrapper<H, T, P, R>
 where
 	H: RpcHandler<T, P, R> + Clone + Send + Sync + 'static,
-	T: Send + Sync,
-	P: Send + Sync,
-	R: Send + Sync,
+	T: Send + Sync + 'static,
+	P: Send + Sync + 'static,
+	R: Send + Sync + 'static,
 {
 	fn call(
 		&self,

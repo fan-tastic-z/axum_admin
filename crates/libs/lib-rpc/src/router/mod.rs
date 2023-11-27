@@ -40,13 +40,42 @@ impl RpcRouter {
 		}
 	}
 
-	pub fn add(
+	/// Add a dyn_handler to the router.
+	///
+	/// ```
+	/// RpcRouter::new().add_dyn("method_name", my_handler_fn.into_dyn());
+	/// ```
+	///
+	/// Note: This is the preferred way to add handlers to the router, as it
+	///       avoids monomorphization of the add function.
+	///       The RpcRouter also has a `.add()` as a convenience function to just pass the function.
+	///       See `RpcRouter::add` for more details.
+	pub fn add_dyn(
 		mut self,
 		name: &'static str,
-		erased_route: Box<dyn RpcHandlerWrapperTrait>,
+		dyn_handler: Box<dyn RpcHandlerWrapperTrait>,
 	) -> Self {
-		self.route_by_name.insert(name, erased_route);
+		self.route_by_name.insert(name, dyn_handler);
 		self
+	}
+
+	/// Add an handler function to the router.
+	///
+	/// ```
+	/// RpcRouter::new().add("method_name", my_handler_fn);
+	/// ```
+	///
+	/// Note: This is a convenient add function variant with generics,
+	///       and there will be monomorphed versions of this function
+	///       for each type passed. Use `RpcRouter::add_dyn` to avoid this.
+	pub fn add<F, T, P, R>(self, name: &'static str, handler: F) -> Self
+	where
+		F: RpcHandler<T, P, R> + Clone + Send + Sync + 'static,
+		T: Send + Sync + 'static,
+		P: Send + Sync + 'static,
+		R: Send + Sync + 'static,
+	{
+		self.add_dyn(name, handler.into_dyn())
 	}
 
 	pub fn extend(mut self, other_router: RpcRouter) -> Self {
@@ -84,10 +113,10 @@ impl RpcRouter {
 /// Is equivalent to:
 /// ```
 /// RpcRouter::new()
-///     .add("create_project", create_project.into_box())
-///     .add("list_projects", list_projects.into_box())
-///     .add("update_project", update_project.into_box())
-///     .add("delete_project", delete_project.into_box())
+///     .add_dyn("create_project", create_project.into_box())
+///     .add_dyn("list_projects", list_projects.into_box())
+///     .add_dyn("update_project", update_project.into_box())
+///     .add_dyn("delete_project", delete_project.into_box())
 /// ```
 ///
 #[macro_export]
@@ -97,7 +126,7 @@ macro_rules! rpc_router {
 			use $crate::router::{RpcHandler, RpcRouter};
             let mut router = RpcRouter::new();
             $(
-                router = router.add(stringify!($fn_name), $fn_name.into_box());
+                router = router.add_dyn(stringify!($fn_name), $fn_name.into_dyn());
             )+
             router
         }
