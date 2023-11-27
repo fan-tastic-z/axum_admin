@@ -4,7 +4,7 @@ pub mod mw_req_stamp;
 pub mod mw_res_map;
 pub mod routes_login;
 pub mod routes_static;
-pub mod rpc;
+pub mod routes_rpc;
 
 use lib_core::token::generate_web_token;
 use time::OffsetDateTime;

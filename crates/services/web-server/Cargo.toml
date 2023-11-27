@@ -9,6 +9,7 @@ edition = "2021"
 # -- App Libs
 lib-base = { path = "../../libs/lib-base" }
 lib-core = { path = "../../libs/lib-core" }
+lib-rpc = { path = "../../libs/lib-rpc"}
 # -- Async
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"

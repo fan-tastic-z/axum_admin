@@ -1,10 +1,10 @@
+use crate::router::{IntoDefaultParams, IntoParams};
+use crate::Result;
 use modql::filter::ListOptions;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use serde_with::{serde_as, OneOrMany};
 use uuid::Uuid;
-
-use crate::web::rpc::router::{IntoDefaultParams, IntoParams};
 
 #[derive(Deserialize)]
 pub struct ParamsForCreate<D> {
@@ -55,7 +55,7 @@ where
 	D: DeserializeOwned + Send,
 	D: IntoParams,
 {
-	fn into_params(value: Option<Value>) -> crate::web::Result<Self> {
+	fn into_params(value: Option<Value>) -> Result<Self> {
 		let value = value.map(|v| serde_json::from_value(v)).transpose()?;
 		Ok(value)
 	}

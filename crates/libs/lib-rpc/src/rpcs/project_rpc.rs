@@ -1,4 +1,3 @@
-use crate::web::Result;
 use lib_core::{
 	ctx::Ctx,
 	model::{
@@ -10,10 +9,8 @@ use lib_core::{
 };
 
 use crate::rpc_router;
-use crate::web::rpc::params::{
-	ParamsForCreate, ParamsForUpdate, ParamsIded, ParamsList,
-};
-use crate::web::rpc::router::{RpcHandler, RpcRouter};
+use crate::{router::RpcRouter, ParamsForCreate, ParamsForUpdate, ParamsIded};
+use crate::{ParamsList, Result};
 
 pub fn rpc_router() -> RpcRouter {
 	rpc_router!(

@@ -11,7 +11,7 @@ use lib_core::{
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::Cookies;
-use tracing::{debug, info};
+use tracing::debug;
 
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
@@ -38,12 +38,12 @@ async fn api_login_handler(
 		password: pwd_clear,
 	} = payload;
 	let root_ctx = Ctx::root_ctx();
-	info!("1");
+
 	let user: UserForLogin = UserBmc::first_by_username(&root_ctx, &mm, &username)
 		.await?
 		.ok_or(Error::LoginFailUsernameNotFound)?
 		.into();
-	info!("2");
+
 	let user_id = user.id;
 
 	let Some(pwd) = user.password else {

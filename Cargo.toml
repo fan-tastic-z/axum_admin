@@ -9,6 +9,8 @@ members = [
     "crates/libs/lib-base",
     # "crates/libs/core", # e.g., model, ctx, config, pwd, token.
     "crates/libs/lib-core",
+    # e.g., rpc routing.
+    "crates/libs/lib-rpc",
     # "creates/libs/lib-sea-orm-tools"
     # "crates/libs/lib-sea-orm-tools",
     # -- Application Services
