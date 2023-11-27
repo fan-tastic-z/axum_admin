@@ -9,13 +9,13 @@ use std::pin::Pin;
 /// `RpcHanlderWrapper` is a `RpcHandler` wrapper which implements
 /// `RpcHandlerWrapperTrait` for type erasure, enabling dynamic dispatch.
 #[derive(Clone)]
-pub struct RpcHandlerWrapper<H, S, P, R> {
+pub struct RpcHandlerWrapper<H, T, P, R> {
 	handler: H,
-	_marker: PhantomData<(S, P, R)>,
+	_marker: PhantomData<(T, P, R)>,
 }
 
 // Constructor
-impl<H, S, P, R> RpcHandlerWrapper<H, S, P, R> {
+impl<H, T, P, R> RpcHandlerWrapper<H, T, P, R> {
 	pub fn new(handler: H) -> Self {
 		Self {
 			handler,
@@ -25,9 +25,9 @@ impl<H, S, P, R> RpcHandlerWrapper<H, S, P, R> {
 }
 
 // Call Impl
-impl<H, S, P, R> RpcHandlerWrapper<H, S, P, R>
+impl<H, T, P, R> RpcHandlerWrapper<H, T, P, R>
 where
-	H: RpcHandler<S, P, R> + Send + Sync + 'static,
+	H: RpcHandler<T, P, R> + Send + Sync + 'static,
 {
 	pub fn call(
 		&self,
@@ -51,10 +51,10 @@ pub trait RpcHandlerWrapperTrait: Send + Sync {
 	) -> PinFutureValue;
 }
 
-impl<H, S, P, R> RpcHandlerWrapperTrait for RpcHandlerWrapper<H, S, P, R>
+impl<H, T, P, R> RpcHandlerWrapperTrait for RpcHandlerWrapper<H, T, P, R>
 where
-	H: RpcHandler<S, P, R> + Clone + Send + Sync + 'static,
-	S: Send + Sync,
+	H: RpcHandler<T, P, R> + Clone + Send + Sync + 'static,
+	T: Send + Sync,
 	P: Send + Sync,
 	R: Send + Sync,
 {

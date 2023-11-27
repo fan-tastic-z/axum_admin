@@ -18,7 +18,9 @@ use serde_json::Value;
 /// - A `RpcHandler` will typically be implemented for static functions, as `FnOnce`,
 ///   enabling them to be cloned with none or negligible performance impact,
 ///   thus facilitating the use of RpcRoute dynamic dispatch.
-pub trait RpcHandler<S, P, R>: Clone {
+/// - `T` is the tuple of `impl FromResources` arguments.
+/// - `P` is the `impl IntoParams` argument.
+pub trait RpcHandler<T, P, R>: Clone {
 	/// The type of future calling this handler returns.
 	type Future: Future<Output = Result<Value>> + Send + 'static;
 
@@ -32,20 +34,21 @@ pub trait RpcHandler<S, P, R>: Clone {
 	/// Handler into a Boxed RpcHandlerWrapper
 	/// which can then be placed in a container of `Box<dyn RpcHandlerWrapperTrait>`
 	/// for dynamic dispatch.
-	fn into_box(self) -> Box<RpcHandlerWrapper<Self, S, P, R>> {
+	fn into_box(self) -> Box<RpcHandlerWrapper<Self, T, P, R>> {
 		Box::new(RpcHandlerWrapper::new(self))
 	}
 }
 
 /// Macro generatring the RpcHandler implementations for zero or more FromResources with the last argument being IntoParams
 /// and one with not last IntoParams argument.
-macro_rules! impl_rpc_handler {
-	($($S:ident),*) => {
+macro_rules! impl_rpc_handler_pair {
+    ($($T:ident),*) => {
+
 		// RpcHandler implementations for zero or more FromResources with the last argument being IntoParams
-		impl<F, Fut, $($S,)* P, R> RpcHandler<($($S,)*), (P,), R> for F
+        impl<F, Fut, $($T,)* P, R> RpcHandler<($($T,)*), (P,), R> for F
         where
-            F: FnOnce($($S,)* P) -> Fut + Clone + Send + 'static,
-            $( $S: FromResources + Send, )*
+            F: FnOnce($($T,)* P) -> Fut + Clone + Send + 'static,
+            $( $T: FromResources + Send, )*
             P: IntoParams,
             R: Serialize,
             Fut: Future<Output = Result<R>> + Send,
@@ -62,7 +65,7 @@ macro_rules! impl_rpc_handler {
                     let param = P::into_params(params_value)?;
 
                     let result = self(
-                        $( $S::from_resources(&rpc_resources)?, )*
+                        $( $T::from_resources(&rpc_resources)?, )*
                         param,
                     )
                     .await?;
@@ -71,10 +74,10 @@ macro_rules! impl_rpc_handler {
             }
         }
 		// RpcHandler implementations for zero or more FromResources and NO IntoParams
-		impl<F, Fut, $($S,)* R> RpcHandler<($($S,)*), (), R> for F
+		impl<F, Fut, $($T,)* R> RpcHandler<($($T,)*), (), R> for F
 		where
-			F: FnOnce($($S,)*) -> Fut + Clone + Send + 'static,
-			$( $S: FromResources + Send, )*
+			F: FnOnce($($T,)*) -> Fut + Clone + Send + 'static,
+			$( $T: FromResources + Send, )*
 			R: Serialize,
 			Fut: Future<Output = Result<R>> + Send,
 		{
@@ -88,7 +91,7 @@ macro_rules! impl_rpc_handler {
 			) -> Self::Future {
 					Box::pin(async move {
 							let result = self(
-									$( $S::from_resources(&rpc_resources)?, )*
+								$( $T::from_resources(&rpc_resources)?, )*
 							)
 							.await?;
 							Ok(serde_json::to_value(result)?)
@@ -98,9 +101,9 @@ macro_rules! impl_rpc_handler {
 	};
 }
 
-impl_rpc_handler!();
-impl_rpc_handler!(S1);
-impl_rpc_handler!(S1, S2);
-impl_rpc_handler!(S1, S2, S3);
-impl_rpc_handler!(S1, S2, S3, S4);
-impl_rpc_handler!(S1, S2, S3, S4, S5);
+impl_rpc_handler_pair!();
+impl_rpc_handler_pair!(T1);
+impl_rpc_handler_pair!(T1, T2);
+impl_rpc_handler_pair!(T1, T2, T3);
+impl_rpc_handler_pair!(T1, T2, T3, T4);
+impl_rpc_handler_pair!(T1, T2, T3, T4, T5);
