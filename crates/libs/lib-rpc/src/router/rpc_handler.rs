@@ -37,63 +37,70 @@ pub trait RpcHandler<S, P, R>: Clone {
 	}
 }
 
-/// RpcHanlder implementation for `my_rpc_handler(FromResources, FromResources) -> Result<Serialize> `
-/// (so, without any `IntoParams` last argument).
-impl<F, Fut, S1, S2, R> RpcHandler<(S1, S2), (), R> for F
-where
-	F: FnOnce(S1, S2) -> Fut + Clone + Send + 'static,
-	S1: FromResources + Send,
-	S2: FromResources + Send,
-	R: Serialize,
-	Fut: Future<Output = Result<R>> + Send,
-{
-	type Future = PinFutureValue;
+/// Macro generatring the RpcHandler implementations for zero or more FromResources with the last argument being IntoParams
+/// and one with not last IntoParams argument.
+macro_rules! impl_rpc_handler {
+	($($S:ident),*) => {
+		// RpcHandler implementations for zero or more FromResources with the last argument being IntoParams
+		impl<F, Fut, $($S,)* P, R> RpcHandler<($($S,)*), (P,), R> for F
+        where
+            F: FnOnce($($S,)* P) -> Fut + Clone + Send + 'static,
+            $( $S: FromResources + Send, )*
+            P: IntoParams,
+            R: Serialize,
+            Fut: Future<Output = Result<R>> + Send,
+        {
+            type Future = PinFutureValue;
 
-	fn call(
-		self,
-		rpc_resources: RpcResources,
-		_params: Option<Value>,
-	) -> Self::Future {
-		Box::pin(async move {
-			let result = self(
-				S1::from_resources(&rpc_resources)?,
-				S2::from_resources(&rpc_resources)?,
-			)
-			.await?;
-			Ok(serde_json::to_value(result)?)
-		})
-	}
+						#[allow(unused)] // somehow rpc_resources will be marked as unused
+            fn call(
+                self,
+                rpc_resources: RpcResources,
+                params_value: Option<Value>,
+            ) -> Self::Future {
+                Box::pin(async move {
+                    let param = P::into_params(params_value)?;
+
+                    let result = self(
+                        $( $S::from_resources(&rpc_resources)?, )*
+                        param,
+                    )
+                    .await?;
+                    Ok(serde_json::to_value(result)?)
+                })
+            }
+        }
+		// RpcHandler implementations for zero or more FromResources and NO IntoParams
+		impl<F, Fut, $($S,)* R> RpcHandler<($($S,)*), (), R> for F
+		where
+			F: FnOnce($($S,)*) -> Fut + Clone + Send + 'static,
+			$( $S: FromResources + Send, )*
+			R: Serialize,
+			Fut: Future<Output = Result<R>> + Send,
+		{
+			type Future = PinFutureValue;
+
+			#[allow(unused)] // somehow rpc_resources will be marked as unused
+			fn call(
+					self,
+					rpc_resources: RpcResources,
+					_params: Option<Value>,
+			) -> Self::Future {
+					Box::pin(async move {
+							let result = self(
+									$( $S::from_resources(&rpc_resources)?, )*
+							)
+							.await?;
+							Ok(serde_json::to_value(result)?)
+					})
+			}
+		}
+	};
 }
 
-/// RpcHandler implementation for `my_rpc_handler(FromResources, FromResources, IntoParams) -> Result<Serialize>`.
-/// Note: The trait bounds `Clone + Send + 'static` apply to `F`,
-///       and `Fut` has its own trait bounds defined afterwards.
-impl<F, Fut, S1, S2, P, R> RpcHandler<(S1, S2), (P,), R> for F
-where
-	F: FnOnce(S1, S2, P) -> Fut + Clone + Send + 'static,
-	S1: FromResources + Send,
-	S2: FromResources + Send,
-	P: IntoParams,
-	R: Serialize,
-	Fut: Future<Output = Result<R>> + Send,
-{
-	type Future = PinFutureValue;
-
-	fn call(
-		self,
-		rpc_resources: RpcResources,
-		params_value: Option<Value>,
-	) -> Self::Future {
-		Box::pin(async move {
-			let param = P::into_params(params_value)?;
-
-			let result = self(
-				S1::from_resources(&rpc_resources)?,
-				S2::from_resources(&rpc_resources)?,
-				param,
-			)
-			.await?;
-			Ok(serde_json::to_value(result)?)
-		})
-	}
-}
+impl_rpc_handler!();
+impl_rpc_handler!(S1);
+impl_rpc_handler!(S1, S2);
+impl_rpc_handler!(S1, S2, S3);
+impl_rpc_handler!(S1, S2, S3, S4);
+impl_rpc_handler!(S1, S2, S3, S4, S5);

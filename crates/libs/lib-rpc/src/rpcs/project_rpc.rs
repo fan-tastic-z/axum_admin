@@ -17,7 +17,7 @@ pub fn rpc_router() -> RpcRouter {
 		create_project,
 		list_projects,
 		update_project,
-		delete_project
+		delete_project,
 	)
 }
 

@@ -11,7 +11,13 @@ use lib_core::{
 };
 
 pub fn rpc_router() -> RpcRouter {
-	rpc_router!(create_task, update_task, list_tasks, delete_task)
+	rpc_router!(
+		// Same as
+		create_task,
+		list_tasks,
+		update_task,
+		delete_task,
+	)
 }
 
 pub async fn create_task(
