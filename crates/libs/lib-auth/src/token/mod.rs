@@ -3,7 +3,7 @@ mod error;
 use std::{fmt::Display, str::FromStr};
 
 use hmac::{Hmac, Mac};
-use lib_base::{
+use lib_utils::{
 	b64::{b64u_decode_to_string, b64u_encode},
 	time::{now_utc, now_utc_plus_sec_str, parse_utc},
 };

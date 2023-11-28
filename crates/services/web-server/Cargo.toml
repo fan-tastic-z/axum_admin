@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # -- App Libs
-lib-base = { path = "../../libs/lib-base" }
+lib-utils = { path = "../../libs/lib-utils" }
 lib-core = { path = "../../libs/lib-core" }
 lib-rpc = { path = "../../libs/lib-rpc" }
 lib-auth = { path = "../../libs/lib-auth" }

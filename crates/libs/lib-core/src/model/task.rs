@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{ctx::Ctx, model::ModelManager};
 
 use chrono::{DateTime, FixedOffset};
-use lib_base::time::date_time_with_zone;
+use lib_utils::time::date_time_with_zone;
 use modql::filter::{
 	FilterGroups, FilterNodes, OpValsBool, OpValsString, OpValsValue,
 };
@@ -217,7 +217,7 @@ mod tests {
 		Error,
 	};
 	use anyhow::Result;
-	use lib_base::time::{format_time, now_utc};
+	use lib_utils::time::{format_time, now_utc};
 	use modql::filter::OpValString;
 	use sea_orm::{
 		sea_query::{ConditionExpression, Expr, IntoCondition},

@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use lib_auth::pwd::{self, ContentToHash};
-use lib_base::time::date_time_with_zone;
+use lib_utils::time::date_time_with_zone;
 use sea_orm::{
 	ActiveModelTrait, ColumnTrait, EntityName, EntityTrait, QueryFilter, Set,
 };

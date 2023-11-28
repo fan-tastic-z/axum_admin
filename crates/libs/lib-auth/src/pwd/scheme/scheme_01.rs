@@ -1,9 +1,12 @@
 use hmac::{Hmac, Mac};
-use lib_base::b64::b64u_encode;
+use lib_utils::b64::b64u_encode;
 use sha2::Sha512;
 
 use super::{Error, Result};
-use crate::{pwd::{scheme::Scheme, ContentToHash}, config::auth_config};
+use crate::{
+	config::auth_config,
+	pwd::{scheme::Scheme, ContentToHash},
+};
 
 pub struct Scheme01;
 

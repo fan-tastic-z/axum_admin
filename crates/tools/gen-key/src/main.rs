@@ -1,5 +1,5 @@
 use anyhow::Result;
-use lib_base::b64::b64u_encode;
+use lib_utils::b64::b64u_encode;
 use rand::RngCore;
 
 fn main() -> Result<()> {

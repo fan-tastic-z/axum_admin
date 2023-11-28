@@ -1,4 +1,4 @@
-use lib_base::envs::{get_env_b64u_as_u8s, get_env_parse};
+use lib_utils::envs::{get_env_b64u_as_u8s, get_env_parse};
 use std::sync::OnceLock;
 
 pub fn auth_config() -> &'static AuthConfig {
@@ -21,7 +21,7 @@ pub struct AuthConfig {
 }
 
 impl AuthConfig {
-	fn load_from_env() -> lib_base::envs::Result<AuthConfig> {
+	fn load_from_env() -> lib_utils::envs::Result<AuthConfig> {
 		Ok(AuthConfig {
 			// -- Crypt
 			PWD_KEY: get_env_b64u_as_u8s("SERVICE_PWD_KEY")?,

@@ -10,7 +10,7 @@ members = [
 
     # -- Application Libraries
     "crates/libs/migration",
-    "crates/libs/lib-base",
+    "crates/libs/lib-utils",
     "crates/libs/lib-core",  # e.g., model, ctx, config.
     "crates/libs/lib-rpc",   # e.g., rpc routing.
     "crates/libs/lib-auth",  # e.g., for pwd, token.
