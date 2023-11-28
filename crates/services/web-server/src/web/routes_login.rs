@@ -1,12 +1,12 @@
 use crate::web::{self, remove_token_cookie, Error, Result};
 use axum::{extract::State, routing::post, Json, Router};
+use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use lib_core::{
 	ctx::Ctx,
 	model::{
 		user::{UserBmc, UserForLogin},
 		ModelManager,
 	},
-	pwd::{self, ContentToHash, SchemeStatus},
 };
 use serde::Deserialize;
 use serde_json::{json, Value};

@@ -11,6 +11,7 @@ path = "src/lib.rs"
 [dependencies]
 # -- App Libs
 lib-core = { path = "../../libs/lib-core" }
+lib-auth = { path = "../../libs/lib-auth" }
 async-std = { version = "1", features = ["attributes", "tokio1"] }
 # -- Others
 uuid = { version = "1", features = ["v4", "fast-rng"] }

@@ -1,14 +1,16 @@
 use crate::web::{Error, ReqStamp, Result};
 use async_trait::async_trait;
-use axum::{http::{Request, request::Parts}, middleware::Next, response::Response, extract::FromRequestParts};
+use axum::{
+	extract::{FromRequestParts, Request},
+	http::request::Parts,
+	middleware::Next,
+	response::Response,
+};
 use lib_base::time::now_utc;
 use tracing::debug;
 use uuid::Uuid;
 
-pub async fn mw_req_stamp<B>(
-	mut req: Request<B>,
-	next: Next<B>,
-) -> Result<Response> {
+pub async fn mw_req_stamp(mut req: Request, next: Next) -> Result<Response> {
 	debug!("{:<12} - mw_req_stamp_resolver", "MIDDLEWARE");
 
 	let time_in = now_utc();

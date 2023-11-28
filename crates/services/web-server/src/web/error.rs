@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use axum::{http::StatusCode, response::IntoResponse};
 use derive_more::From;
-use lib_core::{model, pwd, token};
+use lib_auth::{pwd, token};
+use lib_core::model;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 use tracing::debug;
@@ -54,7 +57,7 @@ impl IntoResponse for Error {
 		// Create a placeholder Axum reponse.
 		let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 		// Insert the Error into the reponse.
-		response.extensions_mut().insert(self);
+		response.extensions_mut().insert(Arc::new(self));
 		response
 	}
 }

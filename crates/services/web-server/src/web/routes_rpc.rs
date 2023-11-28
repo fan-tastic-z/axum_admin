@@ -23,7 +23,7 @@ pub struct RpcState {
 	pub mm: ModelManager,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RpcInfo {
 	pub id: Option<Value>,
 	pub method: String,

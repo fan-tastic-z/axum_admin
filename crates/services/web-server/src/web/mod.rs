@@ -3,10 +3,9 @@ pub mod mw_auth;
 pub mod mw_req_stamp;
 pub mod mw_res_map;
 pub mod routes_login;
-pub mod routes_static;
 pub mod routes_rpc;
-
-use lib_core::token::generate_web_token;
+pub mod routes_static;
+use lib_auth::token::generate_web_token;
 use time::OffsetDateTime;
 use tower_cookies::{Cookie, Cookies};
 use uuid::Uuid;
@@ -28,7 +27,7 @@ fn set_token_cookie(cookies: &Cookies, user: &str, salt: Uuid) -> Result<()> {
 }
 
 fn remove_token_cookie(cookies: &Cookies) -> Result<()> {
-	let mut cookie = Cookie::named(AUTH_TOKEN);
+	let mut cookie = Cookie::from(AUTH_TOKEN);
 	cookie.set_path("/");
 
 	cookies.remove(cookie);

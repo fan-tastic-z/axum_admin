@@ -1,4 +1,5 @@
 use chrono::DateTime;
+use lib_auth::pwd::{self, ContentToHash};
 use lib_base::time::date_time_with_zone;
 use sea_orm::{
 	ActiveModelTrait, ColumnTrait, EntityName, EntityTrait, QueryFilter, Set,
@@ -13,7 +14,7 @@ use crate::ctx::Ctx;
 use crate::model::entity::users::Model;
 use crate::model::entity::{prelude::Users, users};
 use crate::model::{Error, Result};
-use crate::pwd::{self, ContentToHash};
+
 pub struct UserBmc;
 
 impl UserBmc {

@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::config;
+use crate::config::auth_config;
 use crate::pwd::scheme::Scheme;
 use crate::pwd::ContentToHash;
 use argon2::password_hash::SaltString;
@@ -45,7 +45,7 @@ impl Scheme for Scheme02 {
 fn get_argon2() -> &'static Argon2<'static> {
 	static INSTANCE: OnceLock<Argon2<'static>> = OnceLock::new();
 	let val = INSTANCE.get_or_init(|| {
-		let key = &config().PWD_KEY;
+		let key = &auth_config().PWD_KEY;
 
 		Argon2::new_with_secret(
 			key,

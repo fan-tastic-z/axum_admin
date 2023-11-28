@@ -1,8 +1,6 @@
 use chrono::Local;
-use lib_core::{
-	model::entity::users::{self, Entity},
-	pwd::{self, ContentToHash},
-};
+use lib_auth::pwd::{ContentToHash, self};
+use lib_core::model::entity::users::{self, Entity};
 use sea_orm_migration::{
 	prelude::*,
 	sea_orm::{

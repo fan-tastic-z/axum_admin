@@ -1,9 +1,10 @@
 use derive_more::From;
+use lib_auth::pwd;
 use serde::Serialize;
 use serde_with::{serde_as, DisplayFromStr};
 use uuid::Uuid;
 
-use crate::{model::store, pwd};
+use crate::model::store;
 
 pub type Result<T> = core::result::Result<T, Error>;
 

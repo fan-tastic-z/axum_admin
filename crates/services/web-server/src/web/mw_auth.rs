@@ -1,45 +1,46 @@
 use crate::web::{set_token_cookie, Error, Result, AUTH_TOKEN};
 use async_trait::async_trait;
 use axum::{
-	extract::{FromRequestParts, State},
-	http::{request::Parts, Request},
+	body::Body,
+	extract::{FromRequestParts, Request, State},
+	http::request::Parts,
 	middleware::Next,
 	response::Response,
 };
+use lib_auth::token::{validate_web_token, Token};
 use lib_core::{
 	ctx::Ctx,
 	model::{
 		user::{UserBmc, UserForAuth},
 		ModelManager,
 	},
-	token::{validate_web_token, Token},
 };
 use serde::Serialize;
 use tower_cookies::{Cookie, Cookies};
 use tracing::debug;
 
-pub async fn mw_ctx_require<B>(
+pub async fn mw_ctx_require(
 	ctx: Result<CtxW>,
-	req: Request<B>,
-	next: Next<B>,
+	req: Request<Body>,
+	next: Next,
 ) -> Result<Response> {
 	debug!("{:<12} - mw_ctx_require - {ctx:?}", "MIDDLEWARE");
 	ctx?;
 	Ok(next.run(req).await)
 }
 
-pub async fn mw_ctx_resolve<B>(
+pub async fn mw_ctx_resolve(
 	mm: State<ModelManager>,
 	cookies: Cookies,
-	mut req: Request<B>,
-	next: Next<B>,
+	mut req: Request<Body>,
+	next: Next,
 ) -> Result<Response> {
 	debug!("{:<12} - mw_ctx_resolve", "MIDDLEWARE");
 	let ctx_ext_result = _ctx_resolve(mm, &cookies).await;
 	if ctx_ext_result.is_err()
 		&& !matches!(ctx_ext_result, Err(CtxExtError::TokenNotInCookie))
 	{
-		cookies.remove(Cookie::named(AUTH_TOKEN))
+		cookies.remove(Cookie::from(AUTH_TOKEN))
 	}
 	req.extensions_mut().insert(ctx_ext_result);
 	Ok(next.run(req).await)

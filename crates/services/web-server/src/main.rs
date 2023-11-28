@@ -1,7 +1,6 @@
-use std::net::SocketAddr;
-
 use axum::{middleware, Router};
 use lib_core::model::ModelManager;
+use tokio::net::TcpListener;
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -43,10 +42,10 @@ async fn main() -> Result<()> {
 		.fallback_service(routes_static::serve_dir());
 
 	// region:    --- Start Server
-	let addr = SocketAddr::from(([127, 0, 0, 1], 30000));
-	info!("{:<12} - {addr}\n", "LISTENING");
-	axum::Server::bind(&addr)
-		.serve(routes_all.into_make_service())
+	// Note: For this block, ok to unwrap.
+	let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
+	info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
+	axum::serve(listener, routes_all.into_make_service())
 		.await
 		.unwrap();
 	// endregion: --- Start Server

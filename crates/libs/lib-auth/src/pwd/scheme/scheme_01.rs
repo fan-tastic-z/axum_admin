@@ -3,16 +3,13 @@ use lib_base::b64::b64u_encode;
 use sha2::Sha512;
 
 use super::{Error, Result};
-use crate::{
-	config,
-	pwd::{scheme::Scheme, ContentToHash},
-};
+use crate::{pwd::{scheme::Scheme, ContentToHash}, config::auth_config};
 
 pub struct Scheme01;
 
 impl Scheme for Scheme01 {
 	fn hash(&self, to_hash: &ContentToHash) -> Result<String> {
-		let key = &config().PWD_KEY;
+		let key = &auth_config().PWD_KEY;
 		hash(key, to_hash)
 	}
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::web::routes_rpc::RpcInfo;
 use crate::web::{self, ClientError, ReqStamp};
 use crate::Result;
@@ -15,9 +17,9 @@ pub async fn log_request(
 	http_method: Method,
 	uri: Uri,
 	req_stamp: ReqStamp,
-	rpc_info: Option<&RpcInfo>,
+	rpc_info: Option<&Arc<RpcInfo>>,
 	ctx: Option<Ctx>,
-	web_error: Option<&web::Error>,
+	web_error: Option<&Arc<web::Error>>,
 	client_error: Option<ClientError>,
 ) -> Result<()> {
 	let error_type = web_error.map(|se| se.as_ref().to_string());
