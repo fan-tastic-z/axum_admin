@@ -22,12 +22,6 @@ pub fn parse_utc(moment: &str) -> Result<OffsetDateTime> {
 }
 
 pub fn date_time_with_zone() -> DateTime<Local> {
-	// let dt = Local::now().to_rfc3339();
-	// let dt = Local::now();
-	// let ret = dt.to_rfc3339();
-	// let dt = format_time(now_utc());
-	// let res = DateTime::<Local>::to_rfc3339(dt.as_str());
-
 	let dt = Local::now();
 	let naive_utc = dt.naive_utc();
 	let offset = dt.offset().clone();
